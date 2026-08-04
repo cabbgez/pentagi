@@ -1,5 +1,6 @@
 import { Search, X } from 'lucide-react';
 import { type ReactNode, startTransition, useCallback, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@/components/ui/badge';
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group';
@@ -47,6 +48,7 @@ export function DetailNavigationSheet<T extends { id: string }>({
     sheetIcon,
     sheetTitle,
 }: DetailNavigationSheetProps<T>) {
+    const { t } = useTranslation();
     const {
         clearSearchQuery,
         currentId,
@@ -407,7 +409,7 @@ export function DetailNavigationSheet<T extends { id: string }>({
                             {hasClearButton ? (
                                 <InputGroupAddon align="inline-end">
                                     <InputGroupButton
-                                        aria-label="Clear search"
+                                        aria-label={t('common:detailNav.clearSearch')}
                                         onClick={handleSearchClear}
                                         size="icon-sm"
                                         type="button"

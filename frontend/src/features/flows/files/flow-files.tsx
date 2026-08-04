@@ -1,5 +1,6 @@
 import { ArrowDownToLine, FolderInput, FolderOutput, FolderUp, Search, Upload, X } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import ConfirmationDialog from '@/components/shared/confirmation-dialog';
@@ -31,7 +32,7 @@ import { FlowFilesAttachResourcesDialog } from './flow-files-attach-resources-di
 import { ROOT_GROUPS } from './flow-files-constants';
 import { FlowFilesPromoteDialog } from './flow-files-promote-dialog';
 import { FlowFilesPullDialog } from './flow-files-pull-dialog';
-import { buildFlowFilesDownloadHref, pluralizeItems } from './flow-files-utils';
+import { buildFlowFilesDownloadHref } from './flow-files-utils';
 import { useFlowFilesData } from './use-flow-files-data';
 import { useFlowFilesDelete } from './use-flow-files-delete';
 import { useFlowFilesRealtime } from './use-flow-files-realtime';
@@ -39,6 +40,7 @@ import { useFlowFilesSearch } from './use-flow-files-search';
 import { useFlowFilesUpload } from './use-flow-files-upload';
 
 function FlowFiles() {
+    const { t } = useTranslation();
     const { flowId, flowStatus } = useFlow();
     const [isPullDialogOpen, setIsPullDialogOpen] = useState(false);
     const [isAttachResourcesDialogOpen, setIsAttachResourcesDialogOpen] = useState(false);
@@ -65,13 +67,13 @@ function FlowFiles() {
         const wasCopied = await copyToClipboard(file.path);
 
         if (wasCopied) {
-            toast.success('Path copied to clipboard');
+            toast.success(t('flows:files.pathCopied'));
 
             return;
         }
 
-        toast.error('Failed to copy path');
-    }, []);
+        toast.error(t('flows:files.copyPathFailed'));
+    }, [t]);
 
     /**
      * Join the selected paths with `\n` so the result pastes as a clean
@@ -85,13 +87,13 @@ function FlowFiles() {
         const wasCopied = await copyToClipboard(paths.join('\n'));
 
         if (wasCopied) {
-            toast.success(`${paths.length} ${pluralizeItems(paths.length)} copied to clipboard`);
+            toast.success(t('flows:files.pathsCopied', { count: paths.length }));
 
             return;
         }
 
-        toast.error('Failed to copy paths');
-    }, []);
+        toast.error(t('flows:files.copyPathsFailed'));
+    }, [t]);
 
     // `flowId` may be missing (no flow selected yet) — return '' so FileManager
     // renders a noop link instead of crashing on `null`.
@@ -116,10 +118,10 @@ function FlowFiles() {
             appliesToDirs: true,
             icon: FolderOutput,
             id: 'flow-files-save-as-resource',
-            label: 'Save as resource',
+            label: t('flows:files.saveAsResource'),
             onSelect: handleRequestPromote,
         }),
-        [handleRequestPromote],
+        [handleRequestPromote, t],
     );
 
     const fileManagerActions = useMemo<FileManagerAction[]>(
@@ -163,10 +165,11 @@ function FlowFiles() {
                 <EmptyMedia variant="icon">
                     <FolderUp />
                 </EmptyMedia>
-                <EmptyTitle>No files in cache</EmptyTitle>
+                <EmptyTitle>{t('flows:files.noFilesTitle')}</EmptyTitle>
                 <EmptyDescription>
-                    Upload files to make them available at <code>/work/uploads</code>, or use Pull to sync files from
-                    the running container. You can also drag &amp; drop files here.
+                    {t('flows:files.noFilesDescriptionPrefix')}
+                    <code>/work/uploads</code>
+                    {t('flows:files.noFilesDescriptionSuffix')}
                 </EmptyDescription>
             </EmptyHeader>
         </Empty>
@@ -178,9 +181,11 @@ function FlowFiles() {
                 <EmptyMedia variant="icon">
                     <Search />
                 </EmptyMedia>
-                <EmptyTitle>No matches</EmptyTitle>
+                <EmptyTitle>{t('flows:files.noMatchesTitle')}</EmptyTitle>
                 <EmptyDescription>
-                    No files match <code>{search.debouncedQuery.trim()}</code>. Try a different query.
+                    {t('flows:files.noMatchesDescriptionPrefix')}
+                    <code>{search.debouncedQuery.trim()}</code>
+                    {t('flows:files.noMatchesDescriptionSuffix')}
                 </EmptyDescription>
             </EmptyHeader>
         </Empty>
@@ -206,7 +211,7 @@ function FlowFiles() {
                 <div className="bg-primary/10 border-primary pointer-events-none absolute inset-0 z-30 flex items-center justify-center rounded-lg border-2 border-dashed">
                     <div className="text-link flex flex-col items-center gap-2">
                         <FolderUp className="size-8" />
-                        <span className="text-sm font-medium">Drop files to upload</span>
+                        <span className="text-sm font-medium">{t('flows:files.dropFilesToUpload')}</span>
                     </div>
                 </div>
             )}
@@ -227,13 +232,13 @@ function FlowFiles() {
                                             <InputGroupInput
                                                 {...field}
                                                 autoComplete="off"
-                                                placeholder="Search files..."
+                                                placeholder={t('flows:files.searchPlaceholder')}
                                                 type="text"
                                             />
                                             {field.value && (
                                                 <InputGroupAddon align="inline-end">
                                                     <InputGroupButton
-                                                        aria-label="Clear file search"
+                                                        aria-label={t('flows:files.clearSearchAria')}
                                                         onClick={search.resetSearch}
                                                         type="button"
                                                     >
@@ -251,7 +256,7 @@ function FlowFiles() {
                             <TooltipTrigger asChild>
                                 <span>
                                     <Button
-                                        aria-label="Upload files"
+                                        aria-label={t('flows:files.uploadFiles')}
                                         disabled={upload.isUploading || isLoading}
                                         onClick={upload.openFilePicker}
                                         size="icon-sm"
@@ -263,9 +268,10 @@ function FlowFiles() {
                                 </span>
                             </TooltipTrigger>
                             <TooltipContent className="max-w-64 text-center text-xs">
-                                <p className="font-medium">Upload files</p>
+                                <p className="font-medium">{t('flows:files.uploadFiles')}</p>
                                 <p className="mt-1">
-                                    Pushed to <code>/work/uploads</code> — immediately accessible inside the container.
+                                    {t('flows:files.uploadFilesDescriptionPrefix')} <code>/work/uploads</code>
+                                    {t('flows:files.uploadFilesDescriptionSuffix')}
                                 </p>
                             </TooltipContent>
                         </Tooltip>
@@ -274,7 +280,7 @@ function FlowFiles() {
                             <TooltipTrigger asChild>
                                 <span>
                                     <Button
-                                        aria-label="Attach resources"
+                                        aria-label={t('flows:files.attachResources')}
                                         disabled={isAttachResourcesDisabled}
                                         onClick={handleOpenAttachResourcesDialog}
                                         size="icon-sm"
@@ -286,10 +292,10 @@ function FlowFiles() {
                                 </span>
                             </TooltipTrigger>
                             <TooltipContent className="max-w-64 text-center text-xs">
-                                <p className="font-medium">Attach resources</p>
+                                <p className="font-medium">{t('flows:files.attachResources')}</p>
                                 <p className="mt-1">
-                                    Copied from the library to <code>/work/resources</code> — immediately accessible
-                                    inside the container.
+                                    {t('flows:files.attachResourcesTooltipDescriptionPrefix')} <code>/work/resources</code>
+                                    {t('flows:files.attachResourcesTooltipDescriptionSuffix')}
                                 </p>
                             </TooltipContent>
                         </Tooltip>
@@ -298,7 +304,7 @@ function FlowFiles() {
                             <TooltipTrigger asChild>
                                 <span>
                                     <Button
-                                        aria-label="Pull from container"
+                                        aria-label={t('flows:files.pullFromContainer')}
                                         disabled={isPullDisabled}
                                         onClick={handleOpenPullDialog}
                                         size="icon-sm"
@@ -312,13 +318,15 @@ function FlowFiles() {
                             <TooltipContent className="max-w-64 text-center text-xs">
                                 {isContainerRunning ? (
                                     <>
-                                        <p className="font-medium">Pull file or directory from container</p>
+                                        <p className="font-medium">{t('flows:files.pullFromContainerTitle')}</p>
                                         <p className="mt-1">
-                                            Snapshots are stored separately under <strong>Container</strong>.
+                                            {t('flows:files.pullFromContainerDescriptionPrefix')}{' '}
+                                            <strong>{t('flows:files.rootGroupContainer')}</strong>
+                                            {t('flows:files.pullFromContainerDescriptionSuffix')}
                                         </p>
                                     </>
                                 ) : (
-                                    <p className="font-medium">Container is not running</p>
+                                    <p className="font-medium">{t('flows:files.containerNotRunning')}</p>
                                 )}
                             </TooltipContent>
                         </Tooltip>
@@ -358,13 +366,14 @@ function FlowFiles() {
             />
 
             <ConfirmationDialog
-                confirmText="Delete"
+                cancelText={t('common:action.cancel')}
+                confirmText={t('common:action.delete')}
                 handleConfirm={deletion.confirmDelete}
                 handleOpenChange={handleDeleteDialogOpenChange}
                 isOpen={!!deletion.fileToDelete}
                 itemName={deletion.fileToDelete?.name}
-                itemType={deletion.fileToDelete?.isDir ? 'directory' : 'file'}
-                title={deletion.fileToDelete?.isDir ? 'Delete Directory' : 'Delete File'}
+                itemType={deletion.fileToDelete?.isDir ? t('flows:files.directory') : t('flows:files.file')}
+                title={deletion.fileToDelete?.isDir ? t('flows:files.deleteDirectoryTitle') : t('flows:files.deleteFileTitle')}
             />
         </div>
     );

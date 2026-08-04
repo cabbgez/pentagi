@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import type { OverwriteOutcome } from '@/components/shared/overwrite';
@@ -6,7 +7,7 @@ import type { OverwriteOutcome } from '@/components/shared/overwrite';
 import { api, getApiErrorMessage, getApiErrorStatusCode } from '@/lib/axios';
 
 import { CONTAINER_TARGET_DIRECTORY, FLOW_FILES_PULL_API_PATH } from './flow-files-constants';
-import { type FlowFilesResponse, pluralizeItems } from './flow-files-utils';
+import { type FlowFilesResponse } from './flow-files-utils';
 
 interface UseFlowFilesPullParams {
     flowId: null | string;
@@ -31,6 +32,7 @@ interface UseFlowFilesPullResult {
  * a 1-element array), matching the wire shape the rest of our file APIs use.
  */
 export function useFlowFilesPull({ flowId, onSuccess }: UseFlowFilesPullParams): UseFlowFilesPullResult {
+    const { t } = useTranslation();
     const [isPulling, setIsPulling] = useState(false);
 
     const pull = useCallback(
@@ -55,10 +57,10 @@ export function useFlowFilesPull({ flowId, onSuccess }: UseFlowFilesPullParams):
 
                 const description =
                     paths.length === 1
-                        ? `Saved to local cache under ${CONTAINER_TARGET_DIRECTORY}`
-                        : `Saved ${paths.length} ${pluralizeItems(paths.length)} to local cache under ${CONTAINER_TARGET_DIRECTORY}`;
+                        ? t('flows:files.savedToCache', { path: CONTAINER_TARGET_DIRECTORY })
+                        : t('flows:files.savedItemsToCache', { count: paths.length, path: CONTAINER_TARGET_DIRECTORY });
 
-                toast.success('Pulled from container', { description });
+                toast.success(t('flows:files.pulledFromContainer'), { description });
                 onSuccess();
 
                 return { kind: 'ok' };
@@ -69,16 +71,16 @@ export function useFlowFilesPull({ flowId, onSuccess }: UseFlowFilesPullParams):
                     return { kind: 'conflict' };
                 }
 
-                const description = getApiErrorMessage(error, 'Failed to pull from container');
+                const description = getApiErrorMessage(error, t('flows:files.failedToPullFromContainer'));
 
-                toast.error('Pull failed', { description });
+                toast.error(t('flows:files.pullFailed'), { description });
 
                 return { kind: 'error' };
             } finally {
                 setIsPulling(false);
             }
         },
-        [flowId, onSuccess],
+        [flowId, onSuccess, t],
     );
 
     return {

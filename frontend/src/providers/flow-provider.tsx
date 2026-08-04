@@ -34,6 +34,7 @@ import {
     TerminalLogAddedDocument,
     VectorStoreLogAddedDocument,
 } from '@/graphql/types';
+import i18n from '@/i18n';
 import { isNotFoundError } from '@/lib/errors';
 import { Log } from '@/lib/log';
 
@@ -207,7 +208,7 @@ export function FlowProvider({ children }: FlowProviderProps) {
         }
 
         if (isNotFoundError(flowError)) {
-            toast.error('Flow not found', { id: 'flow-load-error' });
+            toast.error(i18n.t('flows:provider.flowNotFound'), { id: 'flow-load-error' });
         }
 
         Log.error('Error loading flow:', flowError);
@@ -232,8 +233,8 @@ export function FlowProvider({ children }: FlowProviderProps) {
                 });
             } catch (error) {
                 const description =
-                    error instanceof Error ? error.message : 'An error occurred while submitting message';
-                toast.error('Failed to submit message', {
+                    error instanceof Error ? error.message : i18n.t('flows:provider.submitMessageError');
+                toast.error(i18n.t('flows:provider.submitMessageFailed'), {
                     description,
                 });
                 Log.error('Error submitting message:', error);
@@ -254,8 +255,8 @@ export function FlowProvider({ children }: FlowProviderProps) {
                 },
             });
         } catch (error) {
-            const description = error instanceof Error ? error.message : 'An error occurred while stopping flow';
-            toast.error('Failed to stop flow', {
+            const description = error instanceof Error ? error.message : i18n.t('flows:provider.stopFlowError');
+            toast.error(i18n.t('flows:provider.stopFlowFailed'), {
                 description,
             });
             Log.error('Error stopping flow:', error);
@@ -293,8 +294,8 @@ export function FlowProvider({ children }: FlowProviderProps) {
                 }
             } catch (error) {
                 const description =
-                    error instanceof Error ? error.message : 'An error occurred while creating assistant';
-                toast.error('Failed to create assistant', {
+                    error instanceof Error ? error.message : i18n.t('flows:provider.createAssistantError');
+                toast.error(i18n.t('flows:provider.createAssistantFailed'), {
                     description,
                 });
                 Log.error('Error creating assistant:', error);
@@ -325,8 +326,8 @@ export function FlowProvider({ children }: FlowProviderProps) {
                 });
             } catch (error) {
                 const description =
-                    error instanceof Error ? error.message : 'An error occurred while calling assistant';
-                toast.error('Failed to call assistant', {
+                    error instanceof Error ? error.message : i18n.t('flows:provider.callAssistantError');
+                toast.error(i18n.t('flows:provider.callAssistantFailed'), {
                     description,
                 });
                 Log.error('Error calling assistant:', error);
@@ -350,8 +351,8 @@ export function FlowProvider({ children }: FlowProviderProps) {
                 });
             } catch (error) {
                 const description =
-                    error instanceof Error ? error.message : 'An error occurred while stopping assistant';
-                toast.error('Failed to stop assistant', {
+                    error instanceof Error ? error.message : i18n.t('flows:provider.stopAssistantError');
+                toast.error(i18n.t('flows:provider.stopAssistantFailed'), {
                     description,
                 });
                 Log.error('Error stopping assistant:', error);
@@ -384,8 +385,8 @@ export function FlowProvider({ children }: FlowProviderProps) {
                 }
             } catch (error) {
                 const description =
-                    error instanceof Error ? error.message : 'An error occurred while deleting assistant';
-                toast.error('Failed to delete assistant', {
+                    error instanceof Error ? error.message : i18n.t('flows:provider.deleteAssistantError');
+                toast.error(i18n.t('flows:provider.deleteAssistantFailed'), {
                     description,
                 });
                 Log.error('Error deleting assistant:', error);

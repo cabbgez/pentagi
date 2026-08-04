@@ -1,5 +1,6 @@
 import { FolderPlus } from 'lucide-react';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -48,6 +49,7 @@ export function ResourcesMkdirDialog({ defaultParentPath = '', isOpen, onClose }
 }
 
 function ResourcesMkdirDialogForm({ defaultParentPath, onClose }: ResourcesMkdirDialogFormProps) {
+    const { t } = useTranslation();
     const { isCreating, mkdir } = useResourcesMkdir();
 
     const form = useAppForm<ResourcesMkdirFormValues>({
@@ -72,12 +74,9 @@ function ResourcesMkdirDialogForm({ defaultParentPath, onClose }: ResourcesMkdir
             <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                     <FolderPlus className="size-4" />
-                    Create directory
+                    {t('resources:createDirectoryTitle')}
                 </DialogTitle>
-                <DialogDescription>
-                    Create a virtual directory inside your resource library. Existing parent directories are reused
-                    automatically.
-                </DialogDescription>
+                <DialogDescription>{t('resources:createDirectoryDescription')}</DialogDescription>
             </DialogHeader>
 
             <Form {...form}>
@@ -91,18 +90,19 @@ function ResourcesMkdirDialogForm({ defaultParentPath, onClose }: ResourcesMkdir
                         name="path"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Path</FormLabel>
+                                <FormLabel>{t('resources:pathLabel')}</FormLabel>
                                 <FormControl>
                                     <Input
                                         {...field}
                                         autoComplete="off"
                                         autoFocus
                                         disabled={isCreating}
-                                        placeholder="reports/2025"
+                                        placeholder={t('resources:pathPlaceholder')}
                                     />
                                 </FormControl>
                                 <FormDescription>
-                                    Relative path. Use <code>/</code> to nest into subdirectories.
+                                    {t('resources:pathDescriptionPrefix')} <code>/</code>
+                                    {t('resources:pathDescriptionSuffix')}
                                 </FormDescription>
                                 <FormMessage />
                             </FormItem>
@@ -116,9 +116,9 @@ function ResourcesMkdirDialogForm({ defaultParentPath, onClose }: ResourcesMkdir
                             type="button"
                             variant="outline"
                         >
-                            Cancel
+                            {t('common:action.cancel')}
                         </Button>
-                        <FormSubmitButton icon={<FolderPlus />}>Create</FormSubmitButton>
+                        <FormSubmitButton icon={<FolderPlus />}>{t('resources:create')}</FormSubmitButton>
                     </div>
                 </form>
             </Form>

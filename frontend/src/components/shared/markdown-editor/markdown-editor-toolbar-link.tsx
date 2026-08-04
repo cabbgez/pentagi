@@ -2,6 +2,7 @@ import type { Editor } from '@tiptap/react';
 
 import { Link as LinkIcon } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Toggle } from '@/components/ui/toggle';
@@ -17,6 +18,7 @@ interface LinkPopoverProps {
 }
 
 export function LinkPopover({ disabled, editor, isActive }: LinkPopoverProps) {
+    const { t } = useTranslation();
     const [open, setOpen] = useState(false);
 
     return (
@@ -28,7 +30,7 @@ export function LinkPopover({ disabled, editor, isActive }: LinkPopoverProps) {
                 <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
                         <Toggle
-                            aria-label="Link"
+                            aria-label={t('common:markdownEditor.link')}
                             data-toolbar-item=""
                             disabled={disabled}
                             pressed={isActive}
@@ -38,7 +40,7 @@ export function LinkPopover({ disabled, editor, isActive }: LinkPopoverProps) {
                         </Toggle>
                     </PopoverTrigger>
                 </TooltipTrigger>
-                <TooltipContent>Link</TooltipContent>
+                <TooltipContent>{t('common:markdownEditor.link')}</TooltipContent>
             </Tooltip>
             <PopoverContent
                 align="start"

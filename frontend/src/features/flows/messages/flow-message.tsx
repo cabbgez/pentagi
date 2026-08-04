@@ -1,5 +1,6 @@
 import { Copy } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { AssistantLogFragmentFragment, MessageLogFragmentFragment } from '@/graphql/types';
 
@@ -27,6 +28,7 @@ const containsSearchValue = (text: null | string | undefined, searchValue: strin
 };
 
 function FlowMessage({ log, searchValue = '' }: FlowMessageProps) {
+    const { t } = useTranslation();
     const { createdAt, message, result, resultFormat = ResultFormat.Plain, thinking, type } = log;
     const isReportMessage = type === MessageLogType.Report;
 
@@ -164,7 +166,7 @@ function FlowMessage({ log, searchValue = '' }: FlowMessageProps) {
                             className="cursor-pointer"
                             onClick={toggleThinking}
                         >
-                            {isThinkingVisible ? 'Hide thinking' : 'Show thinking'}
+                            {isThinkingVisible ? t('flows:common.hideThinking') : t('flows:common.showThinking')}
                         </div>
                     </div>
                 )}
@@ -186,7 +188,7 @@ function FlowMessage({ log, searchValue = '' }: FlowMessageProps) {
                             className="cursor-pointer"
                             onClick={toggleDetails}
                         >
-                            {isDetailsVisible ? 'Hide details' : 'Show details'}
+                            {isDetailsVisible ? t('flows:common.hideDetails') : t('flows:common.showDetails')}
                         </div>
                         {renderDetailsContent()}
                     </div>
@@ -205,7 +207,7 @@ function FlowMessage({ log, searchValue = '' }: FlowMessageProps) {
                             onClick={handleCopy}
                         />
                     </TooltipTrigger>
-                    <TooltipContent>Copy</TooltipContent>
+                    <TooltipContent>{t('common:action.copy')}</TooltipContent>
                 </Tooltip>
                 <span className="text-muted-foreground/50">{formatDate(new Date(createdAt))}</span>
                 <span

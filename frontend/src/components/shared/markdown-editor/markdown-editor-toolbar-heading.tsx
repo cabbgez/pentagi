@@ -2,6 +2,7 @@ import type { Editor } from '@tiptap/react';
 import type { LucideIcon } from 'lucide-react';
 
 import { Check, ChevronDown, Heading1, Heading2, Heading3, Heading4, Heading5, Heading6, Type } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -49,6 +50,7 @@ const isSelectedIn = (activeLevel: 0 | HeadingLevel, value: HeadingOption['value
     value === 'paragraph' ? activeLevel === 0 : value === activeLevel;
 
 export function HeadingMenu({ activeLevel, disabled, editor, isInTableCell }: HeadingMenuProps) {
+    const { t } = useTranslation();
     const active = OPTIONS.find((option) => isSelectedIn(activeLevel, option.value)) ?? OPTIONS[0];
     const ActiveIcon = active?.icon ?? Type;
 
@@ -58,7 +60,7 @@ export function HeadingMenu({ activeLevel, disabled, editor, isInTableCell }: He
                 <TooltipTrigger asChild>
                     <DropdownMenuTrigger asChild>
                         <Button
-                            aria-label={`Text style: ${active?.label ?? 'Text'}`}
+                            aria-label={`${t('common:markdownEditor.textStyle')}: ${active?.label ?? 'Text'}`}
                             className="gap-0.5 px-1.5"
                             data-toolbar-item=""
                             disabled={disabled}
@@ -71,7 +73,7 @@ export function HeadingMenu({ activeLevel, disabled, editor, isInTableCell }: He
                         </Button>
                     </DropdownMenuTrigger>
                 </TooltipTrigger>
-                <TooltipContent>Text style</TooltipContent>
+                <TooltipContent>{t('common:markdownEditor.textStyle')}</TooltipContent>
             </Tooltip>
             <DropdownMenuContent
                 align="start"

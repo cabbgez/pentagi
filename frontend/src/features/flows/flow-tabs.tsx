@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -20,6 +21,7 @@ interface FlowTabsProps {
 }
 
 function FlowTabs({ activeTab, onTabChange }: FlowTabsProps) {
+    const { t } = useTranslation();
     const { isDesktop } = useBreakpoint();
 
     const previousActiveTabRef = useRef<string>(activeTab);
@@ -41,16 +43,16 @@ function FlowTabs({ activeTab, onTabChange }: FlowTabsProps) {
             <div className="max-w-full pr-4">
                 <ScrollArea className="w-full pb-3">
                     <TabsList className="flex w-fit">
-                        {!isDesktop && <TabsTrigger value="automation">Automation</TabsTrigger>}
-                        {!isDesktop && <TabsTrigger value="assistant">Assistant</TabsTrigger>}
-                        {!isDesktop && <TabsTrigger value="dashboard">Dashboard</TabsTrigger>}
-                        <TabsTrigger value="terminal">Terminal</TabsTrigger>
-                        <TabsTrigger value="tasks">Tasks</TabsTrigger>
-                        <TabsTrigger value="agents">Agents</TabsTrigger>
-                        <TabsTrigger value="tools">Searches</TabsTrigger>
-                        <TabsTrigger value="vectorStores">Vector Store</TabsTrigger>
-                        <TabsTrigger value="files">Files</TabsTrigger>
-                        <TabsTrigger value="screenshots">Screenshots</TabsTrigger>
+                        {!isDesktop && <TabsTrigger value="automation">{t('flows:tabs.automation')}</TabsTrigger>}
+                        {!isDesktop && <TabsTrigger value="assistant">{t('flows:tabs.assistant')}</TabsTrigger>}
+                        {!isDesktop && <TabsTrigger value="dashboard">{t('flows:tabs.dashboard')}</TabsTrigger>}
+                        <TabsTrigger value="terminal">{t('flows:tabs.terminal')}</TabsTrigger>
+                        <TabsTrigger value="tasks">{t('flows:tabs.tasks')}</TabsTrigger>
+                        <TabsTrigger value="agents">{t('flows:tabs.agents')}</TabsTrigger>
+                        <TabsTrigger value="tools">{t('flows:tabs.tools')}</TabsTrigger>
+                        <TabsTrigger value="vectorStores">{t('flows:tabs.vectorStores')}</TabsTrigger>
+                        <TabsTrigger value="files">{t('flows:tabs.files')}</TabsTrigger>
+                        <TabsTrigger value="screenshots">{t('flows:tabs.screenshots')}</TabsTrigger>
                     </TabsList>
                     <ScrollBar orientation="horizontal" />
                 </ScrollArea>

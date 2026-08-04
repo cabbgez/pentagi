@@ -13,6 +13,7 @@ import {
     Table as TableIcon,
     Trash2,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -42,6 +43,7 @@ interface TableMenuProps {
 }
 
 export function TableMenu({ columnAlign, disabled, editor, isActive, isHeaderRow }: TableMenuProps) {
+    const { t } = useTranslation();
     const run = (fn: (chain: ReturnType<Editor['chain']>) => ReturnType<Editor['chain']>) =>
         fn(editor.chain().focus()).run();
 
@@ -51,7 +53,7 @@ export function TableMenu({ columnAlign, disabled, editor, isActive, isHeaderRow
                 <TooltipTrigger asChild>
                     <DropdownMenuTrigger asChild>
                         <Button
-                            aria-label="Table"
+                            aria-label={t('common:markdownEditor.table')}
                             className={cn('gap-0.5 px-1.5', isActive && 'bg-accent text-accent-foreground')}
                             data-toolbar-item=""
                             disabled={disabled}
@@ -64,7 +66,7 @@ export function TableMenu({ columnAlign, disabled, editor, isActive, isHeaderRow
                         </Button>
                     </DropdownMenuTrigger>
                 </TooltipTrigger>
-                <TooltipContent>Table</TooltipContent>
+                <TooltipContent>{t('common:markdownEditor.table')}</TooltipContent>
             </Tooltip>
             <DropdownMenuContent
                 align="start"
@@ -86,7 +88,7 @@ export function TableMenu({ columnAlign, disabled, editor, isActive, isHeaderRow
                             role="menuitemcheckbox"
                         >
                             <PanelTop className="text-muted-foreground size-4 shrink-0" />
-                            <span>Header row</span>
+                            <span>{t('common:markdownEditor.headerRow')}</span>
                             <Switch
                                 checked={isHeaderRow}
                                 className="pointer-events-none ml-auto"

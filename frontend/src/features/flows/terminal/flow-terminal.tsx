@@ -3,6 +3,7 @@ import '@xterm/xterm/css/xterm.css';
 import { ChevronDown, ChevronUp, ListFilter, Search, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { useDebouncedCallback } from 'use-debounce';
 import { z } from 'zod';
 
@@ -27,6 +28,7 @@ const searchFormSchema = z.object({
 });
 
 function FlowTerminal() {
+    const { t } = useTranslation();
     const { flowData, flowId } = useFlow();
 
     const terminalLogs = useMemo(() => flowData?.terminalLogs ?? [], [flowData?.terminalLogs]);
@@ -166,7 +168,7 @@ function FlowTerminal() {
                                         <InputGroupInput
                                             {...field}
                                             autoComplete="off"
-                                            placeholder="Search terminal logs..."
+                                            placeholder={t('flows:terminal.searchPlaceholder')}
                                             type="text"
                                         />
                                         <InputGroupAddon align="inline-end">
@@ -175,7 +177,7 @@ function FlowTerminal() {
                                                     <InputGroupButton
                                                         onClick={handleFindPrevious}
                                                         size="icon-xs"
-                                                        title="Previous match"
+                                                        title={t('flows:terminal.previousMatch')}
                                                         type="button"
                                                     >
                                                         <ChevronUp />
@@ -183,7 +185,7 @@ function FlowTerminal() {
                                                     <InputGroupButton
                                                         onClick={handleFindNext}
                                                         size="icon-xs"
-                                                        title="Next match"
+                                                        title={t('flows:terminal.nextMatch')}
                                                         type="button"
                                                     >
                                                         <ChevronDown />
@@ -192,10 +194,10 @@ function FlowTerminal() {
                                             )}
                                             {field.value && (
                                                 <InputGroupButton
-                                                    aria-label="Clear terminal search"
+                                                    aria-label={t('flows:terminal.clearSearchAria')}
                                                     onClick={handleClearSearch}
                                                     size="icon-xs"
-                                                    title="Clear search"
+                                                    title={t('flows:terminal.clearSearch')}
                                                     type="button"
                                                 >
                                                     <X />
@@ -233,8 +235,8 @@ function FlowTerminal() {
                         <EmptyMedia variant="icon">
                             <ListFilter />
                         </EmptyMedia>
-                        <EmptyTitle>No terminal logs found</EmptyTitle>
-                        <EmptyDescription>Try adjusting your search or filter parameters</EmptyDescription>
+                        <EmptyTitle>{t('flows:terminal.noLogsFound')}</EmptyTitle>
+                        <EmptyDescription>{t('flows:common.noResultsDescription')}</EmptyDescription>
                     </EmptyHeader>
                     <EmptyContent>
                         <Button
@@ -242,7 +244,7 @@ function FlowTerminal() {
                             variant="outline"
                         >
                             <X />
-                            Reset filters
+                            {t('flows:common.resetFilters')}
                         </Button>
                     </EmptyContent>
                 </Empty>

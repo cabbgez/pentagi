@@ -1,0 +1,55 @@
+{
+    "provider": {
+        "anthropic": "Anthropic",
+        "bedrock": "Bedrock",
+        "custom": "自定义",
+        "deepseek": "DeepSeek",
+        "gemini": "Gemini",
+        "glm": "GLM",
+        "kimi": "Kimi",
+        "minimax": "MiniMax",
+        "ollama": "Ollama",
+        "openai": "OpenAI",
+        "qwen": "Qwen"
+    },
+    "oauth": {
+        "github": "GitHub",
+        "google": "Google"
+    },
+    "status": {
+        "created": "已创建",
+        "running": "运行中",
+        "waiting": "等待中",
+        "finished": "已完成",
+        "failed": "已失败"
+    },
+    "reasoningEffort": {
+        "low": "低",
+        "medium": "中",
+        "high": "高",
+        "max": "最高",
+        "extraHigh": "极高"
+    },
+    "agentType": {
+        "adviser": "顾问",
+        "assistant": "助手",
+        "coder": "编码器",
+        "enricher": "增强器",
+        "generator": "生成器",
+        "installer": "安装器",
+        "pentester": "渗透测试器",
+        "primaryAgent": "主智能体",
+        "refiner": "精炼器",
+        "reflector": "反思器",
+        "searcher": "搜索器",
+        "simple": "简单",
+        "simpleJson": "简单 JSON"
+    },
+    "modelRole": {
+        "primaryAgent": "主智能体",
+        "simple": "简单",
+        "simpleJson": "简单 JSON",
+        "assistant": "助手",
+        "generator": "生成器"
+    }
+}

@@ -22,6 +22,7 @@ import {
     UpdateKnowledgeDocumentDocument,
 } from '@/graphql/types';
 import { useLatestRef } from '@/hooks/use-latest-ref';
+import i18n from '@/i18n';
 import { Log } from '@/lib/log';
 import { URL_PARAMS } from '@/lib/url-params';
 import { useUser } from '@/providers/user-provider';
@@ -153,8 +154,9 @@ export function KnowledgesProvider({ children }: KnowledgesProviderProps) {
 
                 return result?.createKnowledgeDocument;
             } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : 'Failed to create knowledge document';
-                toast.error('Failed to create knowledge document', { description: errorMessage });
+                const errorMessage =
+                    error instanceof Error ? error.message : i18n.t('knowledges:provider.createFailed');
+                toast.error(i18n.t('knowledges:provider.createFailed'), { description: errorMessage });
                 Log.error('Error creating knowledge document:', error);
                 throw error;
             }
@@ -169,8 +171,9 @@ export function KnowledgesProvider({ children }: KnowledgesProviderProps) {
 
                 return result?.updateKnowledgeDocument;
             } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : 'Failed to update knowledge document';
-                toast.error('Failed to update knowledge document', { description: errorMessage });
+                const errorMessage =
+                    error instanceof Error ? error.message : i18n.t('knowledges:provider.updateFailed');
+                toast.error(i18n.t('knowledges:provider.updateFailed'), { description: errorMessage });
                 Log.error('Error updating knowledge document:', error);
                 throw error;
             }
@@ -185,8 +188,9 @@ export function KnowledgesProvider({ children }: KnowledgesProviderProps) {
 
                 return result?.renameKnowledgeDocument;
             } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : 'Failed to rename knowledge document';
-                toast.error('Failed to rename knowledge document', { description: errorMessage });
+                const errorMessage =
+                    error instanceof Error ? error.message : i18n.t('knowledges:provider.renameFailed');
+                toast.error(i18n.t('knowledges:provider.renameFailed'), { description: errorMessage });
                 Log.error('Error renaming knowledge document:', error);
                 throw error;
             }
@@ -199,8 +203,9 @@ export function KnowledgesProvider({ children }: KnowledgesProviderProps) {
             try {
                 await deleteKnowledgeMutation({ variables: { id } });
             } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : 'Failed to delete knowledge document';
-                toast.error('Failed to delete knowledge document', { description: errorMessage });
+                const errorMessage =
+                    error instanceof Error ? error.message : i18n.t('knowledges:provider.deleteFailed');
+                toast.error(i18n.t('knowledges:provider.deleteFailed'), { description: errorMessage });
                 Log.error('Error deleting knowledge document:', error);
                 throw error;
             }

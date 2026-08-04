@@ -6,6 +6,7 @@ import {
     KnowledgeDocumentDocument,
     SettingsProvidersDocument,
 } from '@/graphql/types';
+import i18n from '@/i18n';
 
 import { apolloTitle } from './apollo-title';
 import { formatPromptId } from './format-prompt-id';
@@ -28,72 +29,83 @@ export interface RouteTitleHandle {
  */
 export type TitleResolver = ((params: RouteParams) => string) | ComponentType<{ params: RouteParams }> | string;
 
+// Localized titles resolve through i18next so the document <title> reacts to
+// language changes. i18n.t is called at render time (inside the resolver) —
+// NOT at module load — so switching language updates the current tab's title.
+const t = (key: string): string => i18n.t(key);
+
 /**
  * Single source of truth for every route's document `<title>`. `app.tsx`
  * imports nothing from Apollo for title purposes — it only spreads handles
  * from this registry onto the matching <Route>.
  */
 export const routeTitles = {
-    account: { title: 'Account' },
-    apiTokens: { title: 'API Tokens' },
-    dashboard: { title: 'Dashboard' },
+    account: { title: (): string => t('common:titles.account') },
+    apiTokens: { title: (): string => t('common:titles.apiTokens') },
+    dashboard: { title: (): string => t('common:titles.dashboard') },
     flow: {
         title: apolloTitle({
             document: FlowDocument,
             select: (data, { flowId }) =>
-                data?.flow?.title && flowId ? `Flow #${flowId} — ${data.flow.title}` : 'Flow',
+                data?.flow?.title && flowId
+                    ? `${t('common:titles.flow')} #${flowId} — ${data.flow.title}`
+                    : t('common:titles.flow'),
             variables: ({ flowId }) => (flowId ? { id: flowId } : null),
         }),
     },
-    flowReport: { title: 'Flow report' },
-    flows: { title: 'Flows' },
+    flowReport: { title: (): string => t('common:titles.flowReport') },
+    flows: { title: (): string => t('common:titles.flows') },
     knowledge: {
         title: apolloTitle({
             document: KnowledgeDocumentDocument,
             select: (data, { knowledgeId }) =>
-                knowledgeId === 'new' ? 'New knowledge' : data?.knowledgeDocument?.question || 'Knowledge',
+                knowledgeId === 'new'
+                    ? t('common:titles.newKnowledge')
+                    : data?.knowledgeDocument?.question || t('common:titles.knowledge'),
             variables: ({ knowledgeId }) => (!knowledgeId || knowledgeId === 'new' ? null : { id: knowledgeId }),
         }),
     },
-    knowledges: { title: 'Knowledges' },
-    login: { title: 'Login' },
-    newFlow: { title: 'New flow' },
-    oauth: { title: 'OAuth' },
+    knowledges: { title: (): string => t('common:titles.knowledges') },
+    login: { title: (): string => t('common:titles.login') },
+    newFlow: { title: (): string => t('common:titles.newFlow') },
+    oauth: { title: (): string => t('common:titles.oauth') },
     prompt: {
-        title: (params: RouteParams) => (params.promptId ? formatPromptId(params.promptId) : 'Prompt'),
+        title: (params: RouteParams) => (params.promptId ? formatPromptId(params.promptId) : t('common:titles.prompt')),
     },
-    prompts: { title: 'Prompts' },
+    prompts: { title: (): string => t('common:titles.prompts') },
 
     provider: {
         title: apolloTitle({
             document: SettingsProvidersDocument,
             select: (data, { providerId }) => {
                 if (providerId === 'new') {
-                    return 'New provider';
+                    return t('common:titles.newProvider');
                 }
 
                 const provider = data?.settingsProviders.userDefined?.find(
                     (candidate) => String(candidate.id) === providerId,
                 );
 
-                return provider?.name || 'Provider';
+                return provider?.name || t('common:titles.provider');
             },
             variables: ({ providerId }) => (providerId === 'new' ? null : {}),
         }),
     },
 
-    providers: { title: 'Providers' },
+    providers: { title: (): string => t('common:titles.providers') },
 
-    resources: { title: 'Resources' },
+    resources: { title: (): string => t('common:titles.resources') },
 
     template: {
         title: apolloTitle({
             document: FlowTemplateDocument,
             select: (data, { templateId }) =>
-                templateId === 'new' ? 'New template' : data?.flowTemplate?.title || 'Template',
+                templateId === 'new'
+                    ? t('common:titles.newTemplate')
+                    : data?.flowTemplate?.title || t('common:titles.template'),
             variables: ({ templateId }) => (!templateId || templateId === 'new' ? null : { templateId }),
         }),
     },
 
-    templates: { title: 'Templates' },
+    templates: { title: (): string => t('common:titles.templates') },
 } as const satisfies Record<string, RouteTitleHandle>;

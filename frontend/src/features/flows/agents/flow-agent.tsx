@@ -1,5 +1,6 @@
 import { Copy } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { AgentLogFragmentFragment } from '@/graphql/types';
 
@@ -26,6 +27,7 @@ const containsSearchValue = (text: null | string | undefined, searchValue: strin
 };
 
 function FlowAgent({ log, searchValue = '' }: FlowAgentProps) {
+    const { t } = useTranslation();
     const { createdAt, executor, initiator, result, subtaskId, task, taskId } = log;
 
     const searchChecks = useMemo(() => {
@@ -123,7 +125,7 @@ function FlowAgent({ log, searchValue = '' }: FlowAgentProps) {
                             onClick={handleCopy}
                         />
                     </TooltipTrigger>
-                    <TooltipContent>Copy</TooltipContent>
+                    <TooltipContent>{t('common:action.copy')}</TooltipContent>
                 </Tooltip>
                 <span className="text-muted-foreground/50">{formatDate(new Date(createdAt))}</span>
                 {taskId && (

@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ChevronDown, ListTodo, Search, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { useDebouncedCallback } from 'use-debounce';
 import { z } from 'zod';
 
@@ -27,6 +28,7 @@ const containsSearchValue = (text: null | string | undefined, searchValue: strin
 };
 
 function FlowTasks() {
+    const { t } = useTranslation();
     const { flowData, flowId } = useFlow();
 
     const tasks = useMemo(() => flowData?.tasks ?? [], [flowData?.tasks]);
@@ -109,13 +111,13 @@ function FlowTasks() {
                                         <InputGroupInput
                                             {...field}
                                             autoComplete="off"
-                                            placeholder="Search tasks and subtasks..."
+                                            placeholder={t('flows:tasks.searchPlaceholder')}
                                             type="text"
                                         />
                                         {field.value && (
                                             <InputGroupAddon align="inline-end">
                                                 <InputGroupButton
-                                                    aria-label="Clear task search"
+                                                    aria-label={t('flows:tasks.clearSearchAria')}
                                                     onClick={() => {
                                                         form.reset({ search: '' });
                                                         setDebouncedSearchValue('');
@@ -153,7 +155,7 @@ function FlowTasks() {
 
                     {!isScrolledToBottom && (
                         <Button
-                            aria-label="Scroll to latest task"
+                            aria-label={t('flows:tasks.scrollToLatestAria')}
                             className="absolute right-4 bottom-4 z-10 shadow-md hover:shadow-lg"
                             onClick={() => scrollToEnd()}
                             size="icon-sm"
@@ -173,8 +175,8 @@ function FlowTasks() {
                         <EmptyMedia variant="icon">
                             <ListTodo />
                         </EmptyMedia>
-                        <EmptyTitle>No tasks found for this flow</EmptyTitle>
-                        <EmptyDescription>Tasks will appear here once the agent starts working</EmptyDescription>
+                        <EmptyTitle>{t('flows:tasks.noTasksFound')}</EmptyTitle>
+                        <EmptyDescription>{t('flows:tasks.noTasksFoundDescription')}</EmptyDescription>
                     </EmptyHeader>
                 </Empty>
             )}

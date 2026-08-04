@@ -1,5 +1,6 @@
 import { ListCheck, ListTodo } from 'lucide-react';
 import { memo, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { SubtaskFragmentFragment } from '@/graphql/types';
 
@@ -22,6 +23,7 @@ const containsSearchValue = (text: null | string | undefined, searchValue: strin
 };
 
 function FlowSubtask({ searchValue = '', subtask }: FlowSubtaskProps) {
+    const { t } = useTranslation();
     const { description, id, result, status, title } = subtask;
     const [isDetailsVisible, setIsDetailsVisible] = useState(false);
     const hasDetails = description || result;
@@ -82,7 +84,7 @@ function FlowSubtask({ searchValue = '', subtask }: FlowSubtaskProps) {
                             className="cursor-pointer hover:underline"
                             onClick={() => setIsDetailsVisible(!isDetailsVisible)}
                         >
-                            {isDetailsVisible ? 'Hide details' : 'Show details'}
+                            {isDetailsVisible ? t('flows:common.hideDetails') : t('flows:common.showDetails')}
                         </div>
                         {isDetailsVisible && (
                             <div className="mt-4 flex flex-col gap-4">

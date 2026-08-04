@@ -1,0 +1,59 @@
+{
+    "list": {
+        "title": "Templates",
+        "newTemplate": "New Template",
+        "loadingTitle": "Loading templates...",
+        "loadingDescription": "Please wait while we fetch your flow templates",
+        "loadError": "Error loading templates",
+        "emptyTitle": "No templates yet",
+        "emptyDescription": "Create your first template to get started",
+        "emptyEntityName": "templates",
+        "filterPlaceholder": "Filter templates...",
+        "colTitle": "Title",
+        "colText": "Text",
+        "rename": "Rename",
+        "deleting": "Deleting...",
+        "openMenuAria": "Open menu",
+        "renamePlaceholder": "Template title",
+        "renamed": "Template renamed successfully",
+        "itemType": "template"
+    },
+    "detail": {
+        "title": "Template",
+        "newTemplate": "New template",
+        "renamePlaceholder": "Template title",
+        "doubleClickToRename": "Double-click to rename",
+        "actionsAria": "Template actions",
+        "rename": "Rename",
+        "deleting": "Deleting...",
+        "view": "View",
+        "rawTooltip": "Edit the raw template",
+        "renamed": "Template renamed successfully",
+        "presetTemplates": "Preset templates",
+        "presetsHint": "Click a preset to fill the form, or expand it to preview the content.",
+        "createTitle": "Create a new template",
+        "editTitle": "Edit template",
+        "introDescription": "Add a title and content, or start from a preset.",
+        "titleLabel": "Title",
+        "titlePlaceholder": "A short name for this template",
+        "contentAriaLabel": "Template content",
+        "contentPlaceholder": "Describe the task, or start from a preset",
+        "loadError": "Error loading template",
+        "notFoundTitle": "Template not found",
+        "notFoundDescription": "The template you are looking for does not exist.",
+        "backToTemplates": "Back to Templates",
+        "replace": "Replace",
+        "replaceDescription": "Current form has content. Replace with the selected preset?",
+        "replaceTitle": "Replace content?",
+        "itemType": "template",
+        "validation": {
+            "textRequired": "Text is required",
+            "titleRequired": "Title is required"
+        }
+    },
+    "provider": {
+        "createFailed": "Failed to create template",
+        "updateFailed": "Failed to update template",
+        "deleteFailed": "Failed to delete template"
+    }
+}

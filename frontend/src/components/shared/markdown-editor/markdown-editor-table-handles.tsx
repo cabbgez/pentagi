@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 
 import {
     DropdownMenu,
@@ -59,6 +60,7 @@ interface TableHandlesController {
 // a menu item runs — so it stays out of the byte round-trip. Merged cells / colour / header-column are omitted
 // (not GFM-representable); the toolbar Table dropdown carries the same ops for keyboard/no-hover users.
 export function TableHandles({ editor }: { editor: Editor }) {
+    const { t } = useTranslation();
     const { onMenuChange, open, target } = useTableHandles(editor);
 
     if (!target) {
@@ -75,7 +77,7 @@ export function TableHandles({ editor }: { editor: Editor }) {
             >
                 <DropdownMenuTrigger asChild>
                     <button
-                        aria-label="Column actions"
+                        aria-label={t('common:markdownEditor.columnActions')}
                         className={GRIP_CLASS}
                         data-table-grip=""
                         style={{
@@ -147,7 +149,7 @@ export function TableHandles({ editor }: { editor: Editor }) {
             >
                 <DropdownMenuTrigger asChild>
                     <button
-                        aria-label="Row actions"
+                        aria-label={t('common:markdownEditor.rowActions')}
                         className={GRIP_CLASS}
                         data-table-grip=""
                         style={{
@@ -206,6 +208,7 @@ export function TableHandles({ editor }: { editor: Editor }) {
 // on close, so the deliberately non-reactive useTableHandles hover path pays no per-transaction cost while idle.
 // Reads header state by the hovered cell's position, not the caret — the grip opens without moving the selection.
 function RowHeaderToggleItem({ cellPos, editor }: { cellPos: number; editor: Editor }) {
+    const { t } = useTranslation();
     const isHeaderRow = useEditorState({
         editor,
         selector: ({ editor }) => hasHeaderRow(editor, cellPos),
@@ -223,7 +226,7 @@ function RowHeaderToggleItem({ cellPos, editor }: { cellPos: number; editor: Edi
             role="menuitemcheckbox"
         >
             <PanelTop className="text-muted-foreground size-4 shrink-0" />
-            <span>Header row</span>
+            <span>{t('common:markdownEditor.headerRow')}</span>
             <Switch
                 checked={isHeaderRow}
                 className="pointer-events-none ml-auto"

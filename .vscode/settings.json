@@ -8,6 +8,21 @@
       "DEBUG": "false"
     },
     "go.testExplorer.enable": true,
+    "go.useLanguageServer": true,
+    "go.delveConfig": {
+        "apiVersion": 2,
+        "showRegisters": false,
+        "dlvLoadConfig": {
+            "followPointers": true,
+            "maxVariableRecurse": 1,
+            "maxStringFields": 64,
+            "maxArrayValues": 64,
+            "maxStructFields": -1
+        }
+    },
+    "go.toolsEnvVars": {
+        "GOPROXY": "https://goproxy.cn,direct"
+    },
     "search.useIgnoreFiles": true,
     "search.exclude": {
       "**/frontend/coverage/**": true,

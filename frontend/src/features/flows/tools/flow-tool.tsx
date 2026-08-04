@@ -1,5 +1,6 @@
 import { Copy, Hammer } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { SearchLogFragmentFragment } from '@/graphql/types';
 
@@ -23,6 +24,7 @@ const containsSearchValue = (text: null | string | undefined, searchValue: strin
 };
 
 function FlowTool({ log, searchValue = '' }: FlowToolProps) {
+    const { t } = useTranslation();
     const { createdAt, engine, executor, initiator, query, result, subtaskId, taskId } = log;
 
     const searchChecks = useMemo(() => {
@@ -76,7 +78,7 @@ function FlowTool({ log, searchValue = '' }: FlowToolProps) {
                                     <span>{formatName(engine)}</span>
                                 </span>
                             </TooltipTrigger>
-                            <TooltipContent>Tool name</TooltipContent>
+                            <TooltipContent>{t('flows:tools.toolName')}</TooltipContent>
                         </Tooltip>
                     </div>
 
@@ -128,7 +130,7 @@ function FlowTool({ log, searchValue = '' }: FlowToolProps) {
                             onClick={handleCopy}
                         />
                     </TooltipTrigger>
-                    <TooltipContent>Copy</TooltipContent>
+                    <TooltipContent>{t('common:action.copy')}</TooltipContent>
                 </Tooltip>
                 <span className="text-muted-foreground/50">{formatDate(new Date(createdAt))}</span>
                 {taskId && (

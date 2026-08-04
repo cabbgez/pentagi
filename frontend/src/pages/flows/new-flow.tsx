@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
 import { AppHeader, AppHeaderContent, AppHeaderTitle } from '@/components/layouts/app/app-header';
@@ -11,6 +12,7 @@ import { useProviders } from '@/providers/providers-provider';
 import { useSystemSettings } from '@/providers/system-settings-provider';
 
 function NewFlow() {
+    const { t } = useTranslation();
     const navigate = useNavigate();
 
     const { selectedProvider } = useProviders();
@@ -46,15 +48,15 @@ function NewFlow() {
         <>
             <AppHeader>
                 <AppHeaderContent>
-                    <AppHeaderTitle>New flow</AppHeaderTitle>
+                    <AppHeaderTitle>{t('flows:newFlow.title')}</AppHeaderTitle>
                 </AppHeaderContent>
             </AppHeader>
             <div className="flex min-h-[calc(100dvh-3rem)] items-center justify-center p-4">
                 <Card className="w-full max-w-2xl">
                     <CardContent className="flex flex-col gap-4 pt-6">
                         <div className="flex flex-col gap-2 text-center">
-                            <h2 className="text-2xl font-semibold">Create a new flow</h2>
-                            <p className="text-muted-foreground">Describe what you would like PentAGI to test</p>
+                            <h2 className="text-2xl font-semibold">{t('flows:newFlow.createTitle')}</h2>
+                            <p className="text-muted-foreground">{t('flows:newFlow.subtitle')}</p>
                         </div>
                         <Tabs
                             onValueChange={(value) => setFlowType(value as 'assistant' | 'automation')}
@@ -65,13 +67,13 @@ function NewFlow() {
                                     disabled={isLoading}
                                     value="automation"
                                 >
-                                    Automation
+                                    {t('flows:newFlow.tabAutomation')}
                                 </TabsTrigger>
                                 <TabsTrigger
                                     disabled={isLoading}
                                     value="assistant"
                                 >
-                                    Assistant
+                                    {t('flows:newFlow.tabAssistant')}
                                 </TabsTrigger>
                             </TabsList>
                         </Tabs>
@@ -85,9 +87,9 @@ function NewFlow() {
                             placeholder={
                                 !isLoading
                                     ? flowType === 'automation'
-                                        ? 'Describe what you would like PentAGI to test...'
-                                        : 'What would you like me to help you with?'
-                                    : 'Creating a new flow...'
+                                        ? t('flows:newFlow.placeholderAutomation')
+                                        : t('flows:newFlow.placeholderAssistant')
+                                    : t('flows:newFlow.placeholderCreating')
                             }
                             type={flowType}
                         />

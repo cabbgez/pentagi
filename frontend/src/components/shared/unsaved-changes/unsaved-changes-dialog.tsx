@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { Save } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -12,6 +13,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
+import i18n from '@/i18n';
 
 export interface UnsavedChangesDialogProps {
     /** When `false`, the "Save & leave" button is disabled (e.g. form is invalid). */
@@ -32,8 +34,8 @@ export interface UnsavedChangesDialogProps {
 
 function UnsavedChangesDialog({
     canSave,
-    description = 'You have unsaved changes on this page. Would you like to save them before leaving?',
-    discardText = 'Discard',
+    description = i18n.t('common:unsavedChanges.description'),
+    discardText = i18n.t('common:unsavedChanges.discard'),
     handleCancel,
     handleDiscard,
     handleOpenChange,
@@ -41,9 +43,11 @@ function UnsavedChangesDialog({
     isOpen,
     isSavingFromDialog,
     saveIcon = <Save />,
-    saveText = 'Save',
-    title = 'Unsaved changes',
+    saveText = i18n.t('common:unsavedChanges.save'),
+    title = i18n.t('common:unsavedChanges.title'),
 }: UnsavedChangesDialogProps) {
+    const { t } = useTranslation();
+
     return (
         <Dialog
             onOpenChange={handleOpenChange}
@@ -72,7 +76,7 @@ function UnsavedChangesDialog({
                         onClick={handleCancel}
                         variant="outline"
                     >
-                        Cancel
+                        {t('common:action.cancel')}
                     </Button>
                     <Button
                         disabled={isSavingFromDialog}

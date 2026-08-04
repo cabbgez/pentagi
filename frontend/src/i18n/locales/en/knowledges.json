@@ -1,0 +1,88 @@
+{
+    "list": {
+        "title": "Knowledges",
+        "newKnowledge": "New Knowledge",
+        "searchAriaLabel": "Search knowledge documents",
+        "searchPlaceholder": "Semantic search...",
+        "loadingTitle": "Loading knowledges...",
+        "loadingDescription": "Please wait while we fetch your knowledge documents",
+        "loadError": "Error loading knowledge documents",
+        "emptyTitle": "No knowledge documents yet",
+        "emptyDescription": "Create your first knowledge document to enrich the vector store",
+        "emptyEntityName": "knowledge documents",
+        "filterPlaceholder": "Filter knowledge documents...",
+        "colType": "Type",
+        "colQuestion": "Question",
+        "colFlags": "Flags",
+        "flowRef": "flow #{{id}}",
+        "taskRef": "task #{{id}}",
+        "subtaskRef": "subtask #{{id}}",
+        "manual": "manual",
+        "agent": "agent",
+        "rename": "Rename",
+        "deleting": "Deleting...",
+        "openMenuAria": "Open menu",
+        "renamePlaceholder": "Knowledge question",
+        "renamed": "Knowledge renamed successfully",
+        "itemType": "knowledge document"
+    },
+    "detail": {
+        "loadError": "Error loading knowledge document",
+        "notFound": "Knowledge document not found"
+    },
+    "provider": {
+        "createFailed": "Failed to create knowledge document",
+        "updateFailed": "Failed to update knowledge document",
+        "renameFailed": "Failed to rename knowledge document",
+        "deleteFailed": "Failed to delete knowledge document"
+    },
+    "header": {
+        "title": "Knowledge",
+        "newKnowledge": "New knowledge",
+        "doubleClickToRename": "Double-click to rename",
+        "actionsAria": "Knowledge actions",
+        "anonymize": "Anonymize",
+        "anonymizing": "Anonymizing...",
+        "view": "View",
+        "rawTooltip": "Edit the raw markdown"
+    },
+    "form": {
+        "fieldLabels": {
+            "content": "Content",
+            "codeLang": "Code language",
+            "description": "Description",
+            "question": "Question"
+        },
+        "validation": {
+            "maxLength": "{{label}} must be {{max}} characters or fewer",
+            "contentRequired": "Content is required",
+            "questionRequired": "Question is required",
+            "answerTypeRequired": "Answer type is required",
+            "codeLangRequired": "Code language is required",
+            "guideTypeRequired": "Guide type is required"
+        },
+        "contentAriaLabel": "Content",
+        "contentPlaceholder": "Knowledge content (will be embedded into the vector store)",
+        "docTypeLabel": "Document type",
+        "selectTypePlaceholder": "Select type",
+        "guideTypeLabel": "Guide type",
+        "selectGuideTypePlaceholder": "Select guide type",
+        "answerTypeLabel": "Answer type",
+        "selectAnswerTypePlaceholder": "Select answer type",
+        "codeLangPlaceholder": "e.g. python, go, typescript",
+        "noMatchingLanguage": "No matching language",
+        "questionLabel": "Question",
+        "questionPlaceholder": "Short title or question this document answers",
+        "descriptionLabel": "Description (optional)",
+        "descriptionPlaceholder": "Optional short description",
+        "createTitle": "Create a new knowledge document",
+        "editTitle": "Edit knowledge document",
+        "createDescription": "Add an entry to the vector knowledge base",
+        "editDescription": "Edits to content or metadata will trigger re-embedding",
+        "chunkOf": "chunk {{part}} of {{total}}",
+        "anonymizeNoResult": "Anonymizer returned no result",
+        "noSensitiveData": "No sensitive data detected",
+        "contentAnonymized": "Content anonymized",
+        "anonymizeFailed": "Failed to anonymize content"
+    }
+}

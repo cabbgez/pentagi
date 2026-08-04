@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+import i18n from '@/i18n';
 import { api, getApiErrorMessage } from '@/lib/axios';
 
 import { RESOURCES_MKDIR_API_PATH } from './resources-constants';
@@ -10,9 +11,9 @@ export const resourcesMkdirFormSchema = z.object({
     path: z
         .string()
         .trim()
-        .min(1, { message: 'Path cannot be empty' })
-        .refine((value) => !value.startsWith('/'), { message: 'Path must be relative (no leading "/")' })
-        .refine((value) => !value.split('/').includes('..'), { message: 'Path must not contain ".."' }),
+        .min(1, { message: i18n.t('resources:validation.pathRequired') })
+        .refine((value) => !value.startsWith('/'), { message: i18n.t('resources:validation.pathRelative') })
+        .refine((value) => !value.split('/').includes('..'), { message: i18n.t('resources:validation.pathNoDotDot') }),
 });
 
 export type ResourcesMkdirFormValues = z.infer<typeof resourcesMkdirFormSchema>;
@@ -36,13 +37,15 @@ export function useResourcesMkdir(): UseResourcesMkdirResult {
         try {
             await api.post<void, MkdirRequestBody>(RESOURCES_MKDIR_API_PATH, { path: path.trim() });
 
-            toast.success('Directory created', { description: `Created at /${path.trim()}` });
+            toast.success(i18n.t('resources:directoryCreated'), {
+                description: i18n.t('resources:createdAt', { path: `/${path.trim()}` }),
+            });
 
             return true;
         } catch (error) {
-            const description = getApiErrorMessage(error, 'Failed to create directory');
+            const description = getApiErrorMessage(error, i18n.t('resources:createDirectoryError'));
 
-            toast.error('Create directory failed', { description });
+            toast.error(i18n.t('resources:createDirectoryFailed'), { description });
 
             return false;
         } finally {

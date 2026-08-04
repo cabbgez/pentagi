@@ -9,21 +9,26 @@
             "envFile": "${workspaceFolder}/.env",
             "env": {
                 "CORS_ORIGINS": "http://localhost:*,https://localhost:*",
-                "SERVER_PORT": "8080",
+                "SERVER_PORT": "8081",
                 "SERVER_USE_SSL": "false",
                 "DATABASE_URL": "postgres://postgres:postgres@localhost:5432/pentagidb?sslmode=disable",
-                "PUBLIC_URL": "http://localhost:8080",
+                "PUBLIC_URL": "http://localhost:8081",
                 "STATIC_URL": "http://localhost:8000",
+                // Stable absolute DATA_DIR so installation_id persists across cwd changes
+                "DATA_DIR": "${workspaceFolder}/data",
+                // Scraper container is running on 127.0.0.1:9443 (docker-compose up -d scraper)
+                "SCRAPER_PRIVATE_URL": "https://someuser:somepass@localhost:9443/",
+                "SCRAPER_PUBLIC_URL": "https://someuser:somepass@localhost:9443/",
+                // LLM: set DEEPSEEK_API_KEY here or in .env, or configure via Settings UI after login
+                // "DEEPSEEK_API_KEY": "sk-...",
                 // Choose it instead of STATIC_URL to serve static files from a directory:
                 // "STATIC_DIR": "${workspaceFolder}/frontend/dist",
                 // Langfuse (optional) uncomment to enable
                 // "LANGFUSE_BASE_URL": "http://localhost:4000",
                 // Observability (optional) uncomment to enable
                 // "OTEL_HOST": "localhost:8148",
-                // Scraper (optional) uncomment to enable
-                // "SCRAPER_PRIVATE_URL": "https://someuser:somepass@localhost:9443/",
             },
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/backend",
             "output": "${workspaceFolder}/build/__debug_bin_pentagi",
         },
         {
@@ -34,7 +39,7 @@
             "runtimeArgs": ["run", "dev"],
             "env": {
                 "VITE_APP_LOG_LEVEL": "DEBUG",
-                "VITE_API_URL": "localhost:8080",
+                "VITE_API_URL": "localhost:8081",
                 "VITE_USE_HTTPS": "false",
                 "VITE_PORT": "8000",
                 "VITE_HOST": "0.0.0.0",
@@ -113,7 +118,7 @@
                 "-workers", "8",
                 "-verbose",
             ],
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/backend",
             "output": "${workspaceFolder}/build/__debug_bin_ctester",
         },
         {
@@ -121,8 +126,8 @@
             "request": "launch",
             "name": "Launch Installer",
             "program": "${workspaceFolder}/backend/cmd/installer/",
-            "args": ["-e", "${workspaceFolder}/.env_test.example"],
-            "cwd": "${workspaceFolder}",
+            "args": ["-e", "${workspaceFolder}/.env"],
+            "cwd": "${workspaceFolder}/backend",
             "output": "${workspaceFolder}/build/__debug_bin_installer",
         },
         {
@@ -131,7 +136,7 @@
             "name": "Attach Installer",
             "mode": "local",
             "processId": "${command:PickProcess}",
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/backend",
         },
         {
             "type": "go",
@@ -152,7 +157,7 @@
                 // "describe", "-verbose",
                 "perplexity", "-query", "how I can install burp suite on Kali Linux?", "-max_results", "10",
             ],
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/backend",
             "output": "${workspaceFolder}/build/__debug_bin_ftester",
         },
         {
@@ -167,7 +172,7 @@
             "args": [
                 "info", "-verbose",
             ],
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/backend",
             "output": "${workspaceFolder}/build/__debug_bin_etester",
         },
     ]

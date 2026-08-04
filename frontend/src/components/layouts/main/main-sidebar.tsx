@@ -5,6 +5,7 @@ import {
     FileText,
     Folder,
     GitFork,
+    Languages,
     LayoutDashboard,
     LibraryBig,
     LogOut,
@@ -18,12 +19,14 @@ import {
     UserIcon,
 } from 'lucide-react';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useMatch, useParams } from 'react-router-dom';
 
 import type { Flow } from '@/providers/sidebar-flows-provider';
 import type { Theme } from '@/providers/theme-provider';
 
 import Logo from '@/components/icons/logo';
+import LanguageSwitcher from '@/components/shared/language-switcher';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -62,6 +65,7 @@ interface FlowMenuItemProps {
 }
 
 export function MainSidebar() {
+    const { t } = useTranslation();
     const location = useLocation();
     const isDashboardActive = useMatch('/dashboard');
     const isFlowsActive = useMatch('/flows/*');
@@ -131,7 +135,7 @@ export function MainSidebar() {
                                 >
                                     <Link to={routes.dashboard}>
                                         <LayoutDashboard />
-                                        Dashboard
+                                        {t('common:nav.dashboard')}
                                     </Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
@@ -142,7 +146,7 @@ export function MainSidebar() {
                                 >
                                     <Link to={routes.flows}>
                                         <GitFork />
-                                        Flows
+                                        {t('common:nav.flows')}
                                     </Link>
                                 </SidebarMenuButton>
                                 <SidebarMenuAction
@@ -151,7 +155,7 @@ export function MainSidebar() {
                                     showOnHover
                                 >
                                     <Link
-                                        aria-label="New flow"
+                                        aria-label={t('common:nav.newFlow')}
                                         to={routes.newFlow}
                                     >
                                         <Plus />
@@ -165,7 +169,7 @@ export function MainSidebar() {
                                 >
                                     <Link to={routes.templates}>
                                         <FileText />
-                                        Templates
+                                        {t('common:nav.templates')}
                                     </Link>
                                 </SidebarMenuButton>
                                 <SidebarMenuAction
@@ -188,7 +192,7 @@ export function MainSidebar() {
                                 >
                                     <Link to={routes.resources}>
                                         <Folder />
-                                        Resources
+                                        {t('common:nav.resources')}
                                     </Link>
                                 </SidebarMenuButton>
                                 <SidebarMenuAction
@@ -208,7 +212,7 @@ export function MainSidebar() {
                                 >
                                     <Link to={routes.knowledges}>
                                         <LibraryBig />
-                                        Knowledges
+                                        {t('common:nav.knowledges')}
                                     </Link>
                                 </SidebarMenuButton>
                                 <SidebarMenuAction
@@ -232,7 +236,7 @@ export function MainSidebar() {
                     <SidebarGroup>
                         <SidebarGroupLabel className="flex items-center gap-2">
                             <Clock />
-                            Recent Flows
+                            {t('common:nav.recentFlows')}
                         </SidebarGroupLabel>
                         <SidebarGroupContent>
                             <SidebarMenu>
@@ -254,7 +258,7 @@ export function MainSidebar() {
                     <SidebarGroup>
                         <SidebarGroupLabel className="flex items-center gap-2">
                             <Star />
-                            Favorite Flows
+                            {t('common:nav.favoriteFlows')}
                         </SidebarGroupLabel>
                         <SidebarGroupContent>
                             <SidebarMenu>
@@ -284,7 +288,7 @@ export function MainSidebar() {
                                 to={routes.settings.root}
                             >
                                 <Settings />
-                                Settings
+                                {t('common:nav.settings')}
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -324,7 +328,7 @@ export function MainSidebar() {
                                             <span className="truncate font-semibold">{user?.name}</span>
                                             <span className="truncate text-xs">{user?.mail}</span>
                                             <span className="text-muted-foreground truncate text-xs">
-                                                {user?.type === 'local' ? 'local' : 'oauth'}
+                                                {user?.type === 'local' ? t('common:user.local') : t('common:user.oauth')}
                                             </span>
                                         </div>
                                     </div>
@@ -335,7 +339,7 @@ export function MainSidebar() {
                                     onSelect={(event) => event.preventDefault()}
                                 >
                                     <Settings2 />
-                                    Theme
+                                    {t('common:theme.label')}
                                     <Tabs
                                         className="-my-1.5 -mr-2 ml-auto"
                                         onValueChange={(value) => setTheme(value as Theme)}
@@ -366,6 +370,14 @@ export function MainSidebar() {
                                         </TabsList>
                                     </Tabs>
                                 </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    className="cursor-default hover:bg-transparent focus:bg-transparent"
+                                    onSelect={(event) => event.preventDefault()}
+                                >
+                                    <Languages />
+                                    {t('common:language.label')}
+                                    <LanguageSwitcher className="-my-1.5 -mr-2 ml-auto" />
+                                </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem asChild>
                                     <Link
@@ -373,13 +385,13 @@ export function MainSidebar() {
                                         to={routes.settings.account}
                                     >
                                         <UserIcon className="mr-2 size-4" />
-                                        Profile
+                                        {t('common:nav.profile')}
                                     </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => logout()}>
                                     <LogOut className="mr-2 size-4" />
-                                    Log out
+                                    {t('common:user.logout')}
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>

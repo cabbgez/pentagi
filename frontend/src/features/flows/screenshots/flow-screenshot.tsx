@@ -1,5 +1,6 @@
 import { Image } from 'lucide-react';
 import { memo, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 import type { ScreenshotFragmentFragment } from '@/graphql/types';
@@ -15,6 +16,7 @@ interface FlowScreenshotProps {
 }
 
 function FlowScreenshot({ screenshot }: FlowScreenshotProps) {
+    const { t } = useTranslation();
     const [isExpanded, setIsExpanded] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const imageRef = useRef<HTMLDivElement>(null);
@@ -62,7 +64,7 @@ function FlowScreenshot({ screenshot }: FlowScreenshotProps) {
                                     <span className="truncate font-semibold">{screenshot.url}</span>
                                 </Link>
                             </TooltipTrigger>
-                            <TooltipContent>Source URL</TooltipContent>
+                            <TooltipContent>{t('flows:screenshots.sourceUrl')}</TooltipContent>
                         </Tooltip>
                     </div>
 

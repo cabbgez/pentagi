@@ -11,6 +11,7 @@ import {
     useMemo,
     useState,
 } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -187,6 +188,7 @@ function FileManagerRowImpl({
     posInSet,
     setSize,
 }: FileManagerRowProps) {
+    const { t } = useTranslation();
     const {
         formatModified = defaultFormatModified,
         gridTemplate,
@@ -529,7 +531,7 @@ function FileManagerRowImpl({
                         <DropdownMenu onOpenChange={setIsDropdownMenuOpen}>
                             <DropdownMenuTrigger asChild>
                                 <Button
-                                    aria-label="Row actions"
+                                    aria-label={t('common:fileManager.rowActions')}
                                     className="opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100"
                                     size="icon-xs"
                                     variant="ghost"

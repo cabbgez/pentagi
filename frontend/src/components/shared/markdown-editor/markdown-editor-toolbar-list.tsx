@@ -2,6 +2,7 @@ import type { Editor } from '@tiptap/react';
 import type { LucideIcon } from 'lucide-react';
 
 import { Check, ChevronDown, List, ListOrdered, ListTodo } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -37,6 +38,7 @@ interface ListMenuProps {
 }
 
 export function ListMenu({ activeType, disabled, editor, isInTableCell }: ListMenuProps) {
+    const { t } = useTranslation();
     const active = OPTIONS.find((option) => option.value === activeType);
     // The bullet-list icon doubles as the resting affordance, so the active background — not the glyph — is what
     // distinguishes "in a bullet list" from "no list".
@@ -61,7 +63,7 @@ export function ListMenu({ activeType, disabled, editor, isInTableCell }: ListMe
                         </Button>
                     </DropdownMenuTrigger>
                 </TooltipTrigger>
-                <TooltipContent>Lists</TooltipContent>
+                <TooltipContent>{t('common:markdownEditor.lists')}</TooltipContent>
             </Tooltip>
             <DropdownMenuContent
                 align="start"

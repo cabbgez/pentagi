@@ -1,5 +1,6 @@
 import { Copy } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { FileNode } from '@/components/shared/file-manager';
 import type { OverwriteConflict } from '@/components/shared/overwrite';
@@ -135,6 +136,7 @@ export function ResourcesCopyDialog({ files, onClose }: ResourcesCopyDialogProps
 }
 
 function ResourcesCopyDialogForm({ files, onClose }: ResourcesCopyDialogFormProps) {
+    const { t } = useTranslation();
     const { copy, isCopying } = useResourcesCopy();
     const { resources } = useResources();
     const isMulti = files.length > 1;
@@ -183,8 +185,14 @@ function ResourcesCopyDialogForm({ files, onClose }: ResourcesCopyDialogFormProp
     // Convention: stay enabled until the first submit, then reflect validity (so an invalid submit surfaces
     // errors instead of a silently-dead button). Mirrors FormSubmitButton's requireValid gate.
     const isSubmitDisabled = form.formState.isSubmitted && !form.formState.isValid;
-    const titleText = isMulti ? `Copy ${files.length} items` : files[0].isDir ? 'Copy directory' : 'Copy resource';
-    const overwriteCtaLabel = isMulti ? `Copy ${files.length} with overwrite` : 'Copy with overwrite';
+    const titleText = isMulti
+        ? t('resources:copyItemsTitle', { count: files.length })
+        : files[0].isDir
+          ? t('resources:copyDirectoryTitle')
+          : t('resources:copyResourceTitle');
+    const overwriteCtaLabel = isMulti
+        ? t('resources:copyItemsWithOverwrite', { count: files.length })
+        : t('resources:copyWithOverwrite');
 
     return (
         <>
@@ -196,10 +204,11 @@ function ResourcesCopyDialogForm({ files, onClose }: ResourcesCopyDialogFormProp
                     </DialogTitle>
                     <DialogDescription>
                         {isMulti ? (
-                            <>Duplicate every selected item into the destination directory.</>
+                            t('resources:duplicateDescription')
                         ) : (
                             <>
-                                Duplicate <code>{files[0].path}</code> to a new path.
+                                {t('resources:duplicateSingleDescriptionPrefix')} <code>{files[0].path}</code>
+                                {t('resources:duplicateSingleDescriptionSuffix')}
                             </>
                         )}
                     </DialogDescription>
@@ -216,7 +225,11 @@ function ResourcesCopyDialogForm({ files, onClose }: ResourcesCopyDialogFormProp
                             name="destination"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>{isMulti ? 'Destination directory' : 'Destination path'}</FormLabel>
+                                    <FormLabel>
+                                        {isMulti
+                                            ? t('resources:destinationDirectoryLabel')
+                                            : t('resources:destinationPathLabel')}
+                                    </FormLabel>
                                     <FormControl>
                                         <Input
                                             {...field}
@@ -224,18 +237,15 @@ function ResourcesCopyDialogForm({ files, onClose }: ResourcesCopyDialogFormProp
                                             autoFocus
                                             disabled={isCopying}
                                             placeholder={
-                                                isMulti ? 'Leave empty to copy into the library root' : undefined
+                                                isMulti ? t('resources:copyDestinationPlaceholder') : undefined
                                             }
                                         />
                                     </FormControl>
                                     <FormDescription>
                                         {isMulti ? (
-                                            <>
-                                                Relative directory inside your library. Leave empty for the root. Each
-                                                item keeps its current filename.
-                                            </>
+                                            t('resources:destinationDirectoryDescription')
                                         ) : (
-                                            <>Relative path inside your library.</>
+                                            t('resources:relativePathDescription')
                                         )}
                                     </FormDescription>
                                     <FormMessage />
@@ -250,7 +260,7 @@ function ResourcesCopyDialogForm({ files, onClose }: ResourcesCopyDialogFormProp
                                 type="button"
                                 variant="outline"
                             >
-                                Cancel
+                                {t('common:action.cancel')}
                             </Button>
                             <OverwriteButtons
                                 isDisabled={isSubmitDisabled}
@@ -260,7 +270,7 @@ function ResourcesCopyDialogForm({ files, onClose }: ResourcesCopyDialogFormProp
                                 }}
                                 overwriteLabel={overwriteCtaLabel}
                                 primaryIcon={Copy}
-                                primaryLabel="Copy"
+                                primaryLabel={t('common:action.copy')}
                                 primaryType="submit"
                             />
                         </div>

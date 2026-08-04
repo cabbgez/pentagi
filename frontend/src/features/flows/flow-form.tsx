@@ -14,6 +14,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRef } from 'react';
 import { useController } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
 import type { UserResourceFragmentFragment } from '@/graphql/types';
@@ -43,14 +44,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useResourcesUpload } from '@/features/resources/use-resources-upload';
 import { useAppForm } from '@/hooks/use-app-form';
+import i18n from '@/i18n';
 import { getProviderDisplayName } from '@/models/provider';
 import { useProviders } from '@/providers/providers-provider';
 import { useResources } from '@/providers/resources-provider';
 import { type Template, useTemplates } from '@/providers/templates-provider';
 
 const formSchema = z.object({
-    message: z.string().trim().min(1, { message: 'Message cannot be empty' }),
-    providerName: z.string().trim().min(1, { message: 'Provider must be selected' }),
+    message: z.string().trim().min(1, { message: i18n.t('flows:form.messageRequired') }),
+    providerName: z.string().trim().min(1, { message: i18n.t('flows:form.providerRequired') }),
     resourceIds: z.array(z.string()),
     useAgents: z.boolean(),
 });
@@ -79,9 +81,10 @@ export function FlowForm({
     isSubmitting,
     onCancel,
     onSubmit,
-    placeholder = 'Describe what you would like PentAGI to test...',
+    placeholder = i18n.t('flows:newFlow.placeholderAutomation'),
     type,
 }: FlowFormProps) {
+    const { t } = useTranslation();
     const { providers, setSelectedProvider } = useProviders();
     const { templates } = useTemplates();
     const { resources } = useResources();
@@ -336,13 +339,13 @@ export function FlowForm({
                         onChange={(event) => setTemplateSearch(event.target.value)}
                         onClick={(event) => event.stopPropagation()}
                         onKeyDown={(event) => event.stopPropagation()}
-                        placeholder="Search..."
+                        placeholder={t('flows:form.searchPlaceholder')}
                         value={templateSearch}
                     />
                     {templateSearch && (
                         <InputGroupAddon align="inline-end">
                             <InputGroupButton
-                                aria-label="Clear template search"
+                                aria-label={t('flows:form.clearTemplateSearch')}
                                 onClick={(event) => {
                                     event.stopPropagation();
                                     setTemplateSearch('');
@@ -361,7 +364,7 @@ export function FlowForm({
                         className="min-h-16 justify-center"
                         disabled
                     >
-                        {templateSearch ? 'No results found' : 'No available templates'}
+                        {templateSearch ? t('flows:form.noResultsFound') : t('flows:form.noAvailableTemplates')}
                     </DropdownMenuItem>
                 ) : (
                     filteredTemplates.map((template) => (
@@ -391,13 +394,13 @@ export function FlowForm({
                         onChange={(event) => setResourceSearch(event.target.value)}
                         onClick={(event) => event.stopPropagation()}
                         onKeyDown={(event) => event.stopPropagation()}
-                        placeholder="Search..."
+                        placeholder={t('flows:form.searchPlaceholder')}
                         value={resourceSearch}
                     />
                     {resourceSearch && (
                         <InputGroupAddon align="inline-end">
                             <InputGroupButton
-                                aria-label="Clear resource search"
+                                aria-label={t('flows:form.clearResourceSearch')}
                                 onClick={(event) => {
                                     event.stopPropagation();
                                     setResourceSearch('');
@@ -416,7 +419,7 @@ export function FlowForm({
                         className="min-h-16 justify-center"
                         disabled
                     >
-                        {resourceSearch ? 'No results found' : 'No available resources'}
+                        {resourceSearch ? t('flows:form.noResultsFound') : t('flows:form.noAvailableResources')}
                     </DropdownMenuItem>
                 ) : (
                     filteredResources.map((resource) => {
@@ -472,7 +475,7 @@ export function FlowForm({
                 }}
             >
                 {upload.isUploading ? <Spinner variant="circle" /> : <Plus />}
-                {upload.isUploading ? 'Uploading…' : 'Upload files'}
+                {upload.isUploading ? t('flows:form.uploading') : t('flows:form.uploadFiles')}
             </DropdownMenuItem>
         </>
     );
@@ -559,7 +562,7 @@ export function FlowForm({
                                                             <span className="max-w-40 truncate">
                                                                 {currentProvider
                                                                     ? getProviderDisplayName(currentProvider)
-                                                                    : 'Select Provider'}
+                                                                    : t('flows:form.selectProvider')}
                                                             </span>
                                                             <ChevronDown />
                                                         </InputGroupButton>
@@ -576,13 +579,15 @@ export function FlowForm({
                                                                     }
                                                                     onClick={(event) => event.stopPropagation()}
                                                                     onKeyDown={(event) => event.stopPropagation()}
-                                                                    placeholder="Search..."
+                                                                    placeholder={t('flows:form.searchPlaceholder')}
                                                                     value={providerSearch}
                                                                 />
                                                                 {providerSearch && (
                                                                     <InputGroupAddon align="inline-end">
                                                                         <InputGroupButton
-                                                                            aria-label="Clear provider search"
+                                                                            aria-label={t(
+                                                                                'flows:form.clearProviderSearch',
+                                                                            )}
                                                                             onClick={(event) => {
                                                                                 event.stopPropagation();
                                                                                 setProviderSearch('');
@@ -602,8 +607,8 @@ export function FlowForm({
                                                                     disabled
                                                                 >
                                                                     {providerSearch
-                                                                        ? 'No results found'
-                                                                        : 'No available providers'}
+                                                                        ? t('flows:form.noResultsFound')
+                                                                        : t('flows:form.noAvailableProviders')}
                                                                 </DropdownMenuItem>
                                                             ) : (
                                                                 filteredProviders.map((provider) => (
@@ -664,14 +669,12 @@ export function FlowForm({
                                                                         useAgentsField.onChange(!useAgentsField.value)
                                                                     }
                                                                 >
-                                                                    Use Agents
+                                                                    {t('flows:form.useAgents')}
                                                                 </FormLabel>
                                                             </FormItem>
                                                         </TooltipTrigger>
                                                         <TooltipContent>
-                                                            <p className="max-w-48">
-                                                                Enable multi-agent collaboration for complex tasks
-                                                            </p>
+                                                            <p className="max-w-48">{t('flows:form.useAgentsTooltip')}</p>
                                                         </TooltipContent>
                                                     </Tooltip>
                                                 </TooltipProvider>
@@ -689,7 +692,7 @@ export function FlowForm({
                                     >
                                         <DropdownMenuTrigger asChild>
                                             <InputGroupButton
-                                                aria-label="Templates and resources"
+                                                aria-label={t('flows:form.templatesAndResourcesAria')}
                                                 className="ml-auto shrink-0"
                                                 disabled={isFormDisabled}
                                                 size="icon-xs"
@@ -739,14 +742,14 @@ export function FlowForm({
                                                         value="templates"
                                                     >
                                                         <FileText className="size-3.5" />
-                                                        Templates
+                                                        {t('flows:form.tabTemplates')}
                                                     </TabsTrigger>
                                                     <TabsTrigger
                                                         className="gap-1.5"
                                                         value="resources"
                                                     >
                                                         <Paperclip className="size-3.5" />
-                                                        Resources
+                                                        {t('flows:form.tabResources')}
                                                         {flowResources.length > 0 && (
                                                             <span className="bg-muted-foreground/20 text-foreground flex h-4 min-w-4 items-center justify-center rounded px-1 text-[10px] font-medium tabular-nums">
                                                                 {flowResources.length}
@@ -800,9 +803,9 @@ export function FlowForm({
             />
             <ConfirmationDialog
                 confirmIcon={<FileSymlink />}
-                confirmText="Replace"
+                confirmText={t('flows:form.replace')}
                 confirmVariant="default"
-                description="Current message has content. Replace with the selected template?"
+                description={t('flows:form.replaceConfirmDescription')}
                 handleConfirm={handleConfirmReplaceTemplate}
                 handleOpenChange={(open) => {
                     if (!open) {
@@ -812,7 +815,7 @@ export function FlowForm({
                     setIsReplaceConfirmOpen(open);
                 }}
                 isOpen={isReplaceConfirmOpen}
-                title="Replace content?"
+                title={t('flows:form.replaceConfirmTitle')}
             />
         </Form>
     );

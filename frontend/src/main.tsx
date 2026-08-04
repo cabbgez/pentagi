@@ -1,4 +1,8 @@
 import './styles/index.css';
+// Initialize i18next before <App /> renders so the first paint already has
+// the resolved language. This is a side-effect import — the module's top-level
+// i18n.use().init() runs synchronously here.
+import '@/i18n';
 
 import * as React from 'react';
 import ReactDOM from 'react-dom/client';

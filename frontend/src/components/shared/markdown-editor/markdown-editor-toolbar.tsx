@@ -14,6 +14,7 @@ import {
     Undo,
 } from 'lucide-react';
 import { memo, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Separator } from '@/components/ui/separator';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -182,6 +183,8 @@ export const MarkdownEditorToolbar = memo(function MarkdownEditorToolbar({
     disabled,
     editor,
 }: MarkdownEditorToolbarProps) {
+    const { t } = useTranslation();
+
     // tiptap v3's useEditor does NOT re-render on every transaction, so reading editor.isActive/can() inline
     // would leave the toolbar stale on selection-only moves (click into a bold word → Bold stays unlit).
     // useEditorState re-runs this selector per transaction and re-renders only when a value flips.
@@ -234,7 +237,7 @@ export const MarkdownEditorToolbar = memo(function MarkdownEditorToolbar({
     return (
         <TooltipProvider delayDuration={400}>
             <div
-                aria-label="Formatting"
+                aria-label={t('common:markdownEditor.formatting')}
                 className={cn(
                     'bg-muted/40 order-last flex items-center border-t px-1 py-1',
                     'md:order-first md:border-t-0 md:border-b',
@@ -269,7 +272,7 @@ export const MarkdownEditorToolbar = memo(function MarkdownEditorToolbar({
                     >
                         <ToolbarToggle
                             disabled={disabled || !state.canBold}
-                            label="Bold"
+                            label={t('common:markdownEditor.bold')}
                             onPressedChange={() => editor.chain().focus().toggleBold().run()}
                             pressed={state.isBold}
                             shortcut={shortcutFor('B')}
@@ -278,7 +281,7 @@ export const MarkdownEditorToolbar = memo(function MarkdownEditorToolbar({
                         </ToolbarToggle>
                         <ToolbarToggle
                             disabled={disabled || !state.canItalic}
-                            label="Italic"
+                            label={t('common:markdownEditor.italic')}
                             onPressedChange={() => editor.chain().focus().toggleItalic().run()}
                             pressed={state.isItalic}
                             shortcut={shortcutFor('I')}
@@ -287,7 +290,7 @@ export const MarkdownEditorToolbar = memo(function MarkdownEditorToolbar({
                         </ToolbarToggle>
                         <ToolbarToggle
                             disabled={disabled || !state.canStrike}
-                            label="Strikethrough"
+                            label={t('common:markdownEditor.strikethrough')}
                             onPressedChange={() => editor.chain().focus().toggleStrike().run()}
                             pressed={state.isStrike}
                         >
@@ -295,7 +298,7 @@ export const MarkdownEditorToolbar = memo(function MarkdownEditorToolbar({
                         </ToolbarToggle>
                         <ToolbarToggle
                             disabled={disabled || !state.canCode}
-                            label="Inline code"
+                            label={t('common:markdownEditor.inlineCode')}
                             onPressedChange={() => editor.chain().focus().toggleCode().run()}
                             pressed={state.isCode}
                         >
@@ -344,7 +347,7 @@ export const MarkdownEditorToolbar = memo(function MarkdownEditorToolbar({
                     >
                         <ToolbarToggle
                             disabled={disabled || !state.canBlockquote}
-                            label="Blockquote"
+                            label={t('common:markdownEditor.blockquote')}
                             onPressedChange={() => editor.chain().focus().toggleBlockquote().run()}
                             pressed={state.isBlockquote}
                         >
@@ -352,7 +355,7 @@ export const MarkdownEditorToolbar = memo(function MarkdownEditorToolbar({
                         </ToolbarToggle>
                         <ToolbarToggle
                             disabled={disabled || state.isInTableCell}
-                            label="Code block"
+                            label={t('common:markdownEditor.codeBlock')}
                             onPressedChange={() => editor.chain().focus().toggleCodeBlock().run()}
                             pressed={state.isCodeBlock}
                         >
@@ -364,7 +367,7 @@ export const MarkdownEditorToolbar = memo(function MarkdownEditorToolbar({
                         />
                         <ToolbarButton
                             disabled={disabled || state.isInTableCell}
-                            label="Horizontal rule"
+                            label={t('common:markdownEditor.horizontalRule')}
                             onClick={() => editor.chain().focus().setHorizontalRule().run()}
                         >
                             <Minus />
@@ -378,7 +381,7 @@ export const MarkdownEditorToolbar = memo(function MarkdownEditorToolbar({
 
                     <ToolbarButton
                         disabled={disabled}
-                        label="Clear formatting"
+                        label={t('common:markdownEditor.clearFormatting')}
                         onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
                     >
                         <RemoveFormatting />
@@ -396,7 +399,7 @@ export const MarkdownEditorToolbar = memo(function MarkdownEditorToolbar({
                 >
                     <ToolbarButton
                         disabled={disabled || !state.canUndo}
-                        label="Undo"
+                        label={t('common:markdownEditor.undo')}
                         onClick={() => editor.chain().focus().undo().run()}
                         shortcut={shortcutFor('Z')}
                     >
@@ -404,7 +407,7 @@ export const MarkdownEditorToolbar = memo(function MarkdownEditorToolbar({
                     </ToolbarButton>
                     <ToolbarButton
                         disabled={disabled || !state.canRedo}
-                        label="Redo"
+                        label={t('common:markdownEditor.redo')}
                         onClick={() => editor.chain().focus().redo().run()}
                         shortcut={shiftShortcutFor('Z')}
                     >

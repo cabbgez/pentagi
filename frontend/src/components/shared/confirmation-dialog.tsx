@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 
 import { Trash2 } from 'lucide-react';
 import { cloneElement, isValidElement, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -13,6 +14,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
+import i18n from '@/i18n';
 import { cn } from '@/lib/utils';
 
 type ConfirmationDialogIconProps = ReactElement<React.SVGProps<SVGSVGElement>>;
@@ -36,31 +38,39 @@ interface ConfirmationDialogProps {
 
 function ConfirmationDialog({
     cancelIcon,
-    cancelText = 'Cancel',
+    cancelText = i18n.t('common:confirmDialog.cancel'),
     cancelVariant = 'outline',
     confirmIcon = <Trash2 />,
-    confirmText = 'Confirm',
+    confirmText = i18n.t('common:confirmDialog.confirm'),
     confirmVariant = 'destructive',
     description,
     handleConfirm,
     handleOpenChange,
     isOpen,
-    itemName = 'this',
-    itemType = 'item',
+    itemName = i18n.t('common:confirmDialog.itemName'),
+    itemType = i18n.t('common:confirmDialog.itemType'),
     title,
 }: ConfirmationDialogProps) {
+    const { t } = useTranslation();
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // `verb !== 'Confirm'` treats the default confirmText as "no custom verb": a bare
+    // `verb !== confirmLabel` treats the default confirmText as "no custom verb": a bare
     // Confirm gets the generic "Confirm Action" title instead of "Confirm <itemType>".
+    const confirmLabel = t('common:confirmDialog.confirm');
     const verb = confirmText.trim();
-    const resolvedTitle = title ?? (verb && verb !== 'Confirm' ? `${verb} ${itemType}` : 'Confirm Action');
+    const resolvedTitle =
+        title ?? (verb && verb !== confirmLabel ? `${verb} ${itemType}` : t('common:confirmDialog.confirmAction'));
 
     const defaultDescription = description || (
-        <>
-            Are you sure you want to {verb.toLowerCase() || 'perform this action on'}{' '}
-            <strong className="text-foreground font-semibold">{itemName}</strong> {itemType}?
-        </>
+        <Trans
+            components={{ strong: <strong className="text-foreground font-semibold" /> }}
+            i18nKey="common:confirmDialog.defaultDescription"
+            values={{
+                itemName,
+                itemType,
+                verb: verb.toLowerCase() || i18n.t('common:confirmDialog.performAction'),
+            }}
+        />
     );
 
     const processIcon = (icon?: ConfirmationDialogIconProps): ConfirmationDialogIconProps | null => {

@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ChevronDown, ListFilter, Search, Wrench, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { useDebouncedCallback } from 'use-debounce';
 import { z } from 'zod';
 
@@ -26,6 +27,7 @@ const searchFormSchema = z.object({
 });
 
 function FlowTools() {
+    const { t } = useTranslation();
     const { flowData, flowId } = useFlow();
 
     const logs = useMemo(() => flowData?.searchLogs ?? [], [flowData?.searchLogs]);
@@ -152,13 +154,13 @@ function FlowTools() {
                                         <InputGroupInput
                                             {...field}
                                             autoComplete="off"
-                                            placeholder="Search tool logs..."
+                                            placeholder={t('flows:tools.searchPlaceholder')}
                                             type="text"
                                         />
                                         {field.value && (
                                             <InputGroupAddon align="inline-end">
                                                 <InputGroupButton
-                                                    aria-label="Clear tool search"
+                                                    aria-label={t('flows:tools.clearSearchAria')}
                                                     onClick={() => {
                                                         form.reset({ search: '' });
                                                         setDebouncedSearchValue('');
@@ -208,7 +210,7 @@ function FlowTools() {
 
                     {!isScrolledToBottom && (
                         <Button
-                            aria-label="Scroll to latest tool log"
+                            aria-label={t('flows:tools.scrollToLatestAria')}
                             className="absolute right-4 bottom-4 z-10 shadow-md hover:shadow-lg"
                             onClick={() => scrollToEnd()}
                             size="icon-sm"
@@ -228,8 +230,8 @@ function FlowTools() {
                         <EmptyMedia variant="icon">
                             <ListFilter />
                         </EmptyMedia>
-                        <EmptyTitle>No search logs found</EmptyTitle>
-                        <EmptyDescription>Try adjusting your search or filter parameters</EmptyDescription>
+                        <EmptyTitle>{t('flows:tools.noLogsFound')}</EmptyTitle>
+                        <EmptyDescription>{t('flows:common.noResultsDescription')}</EmptyDescription>
                     </EmptyHeader>
                     <EmptyContent>
                         <Button
@@ -237,7 +239,7 @@ function FlowTools() {
                             variant="outline"
                         >
                             <X />
-                            Reset filters
+                            {t('flows:common.resetFilters')}
                         </Button>
                     </EmptyContent>
                 </Empty>
@@ -247,10 +249,8 @@ function FlowTools() {
                         <EmptyMedia variant="icon">
                             <Wrench />
                         </EmptyMedia>
-                        <EmptyTitle>No search logs available</EmptyTitle>
-                        <EmptyDescription>
-                            Search logs will appear here when the agent performs searches
-                        </EmptyDescription>
+                        <EmptyTitle>{t('flows:tools.noLogsAvailable')}</EmptyTitle>
+                        <EmptyDescription>{t('flows:tools.noLogsAvailableDescription')}</EmptyDescription>
                     </EmptyHeader>
                 </Empty>
             )}

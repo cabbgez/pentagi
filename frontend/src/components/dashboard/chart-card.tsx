@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { BarChart2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { ResponsiveContainer } from 'recharts';
 
 import { DashboardError } from '@/components/dashboard/dashboard-error';
@@ -26,6 +27,8 @@ export function ChartCard({
     loading?: boolean;
     title: ReactNode;
 }) {
+    const { t } = useTranslation();
+
     return (
         <Card className={className}>
             <CardHeader>
@@ -54,7 +57,7 @@ export function ChartCard({
                         style={{ height }}
                     >
                         <BarChart2 className="text-muted-foreground/30 size-10" />
-                        <p className="text-muted-foreground text-sm">No data for this period</p>
+                        <p className="text-muted-foreground text-sm">{t('dashboard:noDataForPeriod')}</p>
                     </div>
                 ) : (
                     <ResponsiveContainer

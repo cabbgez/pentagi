@@ -1,0 +1,59 @@
+{
+    "list": {
+        "title": "模板",
+        "newTemplate": "新建模板",
+        "loadingTitle": "正在加载模板…",
+        "loadingDescription": "请稍候，正在获取您的流程模板",
+        "loadError": "加载模板出错",
+        "emptyTitle": "还没有模板",
+        "emptyDescription": "创建您的第一个模板开始使用",
+        "emptyEntityName": "模板",
+        "filterPlaceholder": "筛选模板…",
+        "colTitle": "标题",
+        "colText": "文本",
+        "rename": "重命名",
+        "deleting": "删除中…",
+        "openMenuAria": "打开菜单",
+        "renamePlaceholder": "模板标题",
+        "renamed": "模板重命名成功",
+        "itemType": "模板"
+    },
+    "detail": {
+        "title": "模板",
+        "newTemplate": "新建模板",
+        "renamePlaceholder": "模板标题",
+        "doubleClickToRename": "双击重命名",
+        "actionsAria": "模板操作",
+        "rename": "重命名",
+        "deleting": "删除中…",
+        "view": "视图",
+        "rawTooltip": "编辑原始模板",
+        "renamed": "模板重命名成功",
+        "presetTemplates": "预设模板",
+        "presetsHint": "点击预设以填充表单，或展开以预览内容。",
+        "createTitle": "创建新模板",
+        "editTitle": "编辑模板",
+        "introDescription": "添加标题和内容，或从预设开始。",
+        "titleLabel": "标题",
+        "titlePlaceholder": "此模板的简短名称",
+        "contentAriaLabel": "模板内容",
+        "contentPlaceholder": "描述任务，或从预设开始",
+        "loadError": "加载模板出错",
+        "notFoundTitle": "未找到模板",
+        "notFoundDescription": "您查找的模板不存在。",
+        "backToTemplates": "返回模板",
+        "replace": "替换",
+        "replaceDescription": "当前表单已有内容。是否用所选预设替换？",
+        "replaceTitle": "替换内容？",
+        "itemType": "模板",
+        "validation": {
+            "textRequired": "文本不能为空",
+            "titleRequired": "标题不能为空"
+        }
+    },
+    "provider": {
+        "createFailed": "模板创建失败",
+        "updateFailed": "模板更新失败",
+        "deleteFailed": "模板删除失败"
+    }
+}

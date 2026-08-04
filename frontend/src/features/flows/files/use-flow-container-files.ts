@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { FileNode } from '@/components/shared/file-manager';
 
@@ -54,6 +55,7 @@ interface UseFlowContainerFilesResult {
  * is issued, `files` stays an empty array, `isLoading` stays `false`.
  */
 export function useFlowContainerFiles({ flowId, paths }: UseFlowContainerFilesParams): UseFlowContainerFilesResult {
+    const { t } = useTranslation();
     const [files, setFiles] = useState<FileNode[]>([]);
     const [failures, setFailures] = useState<ContainerFileFailure[]>([]);
     const [truncated, setTruncated] = useState(false);
@@ -126,7 +128,7 @@ export function useFlowContainerFiles({ flowId, paths }: UseFlowContainerFilesPa
                 return;
             }
 
-            setError(new Error(getApiErrorMessage(caught, 'Failed to load container files')));
+            setError(new Error(getApiErrorMessage(caught, t('flows:files.failedToLoadContainerFiles'))));
             setFiles([]);
             setFailures([]);
             setTruncated(false);
@@ -135,7 +137,7 @@ export function useFlowContainerFiles({ flowId, paths }: UseFlowContainerFilesPa
                 setIsLoading(false);
             }
         }
-    }, [flowId, paths, pathsKey]);
+    }, [flowId, paths, pathsKey, t]);
 
     useEffect(() => {
         // fetchListing is an async callback that handles its own loading state via setState

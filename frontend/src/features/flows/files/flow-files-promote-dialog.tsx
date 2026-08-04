@@ -1,5 +1,6 @@
 import { BookmarkPlus } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { FileNode } from '@/components/shared/file-manager';
 import type { OverwriteConflict } from '@/components/shared/overwrite';
@@ -134,6 +135,7 @@ export function FlowFilesPromoteDialog({ files, flowId, onClose }: FlowFilesProm
 }
 
 function FlowFilesPromoteDialogForm({ files, flowId, onClose }: FlowFilesPromoteDialogFormProps) {
+    const { t } = useTranslation();
     const { isPromoting, promote } = useFlowFilesPromote({ flowId });
     const { resources } = useResources();
     const isMulti = files.length > 1;
@@ -182,8 +184,10 @@ function FlowFilesPromoteDialogForm({ files, flowId, onClose }: FlowFilesPromote
     // Convention: stay enabled until the first submit, then reflect validity (so an invalid submit surfaces
     // errors instead of a silently-dead button). Mirrors FormSubmitButton's requireValid gate.
     const isSubmitDisabled = form.formState.isSubmitted && !form.formState.isValid;
-    const titleText = isMulti ? `Save ${files.length} items as resources` : 'Save as resource';
-    const overwriteCtaLabel = isMulti ? `Save ${files.length} with overwrite` : 'Save with overwrite';
+    const titleText = isMulti ? t('flows:files.saveItemsAsResources', { count: files.length }) : t('flows:files.saveAsResource');
+    const overwriteCtaLabel = isMulti
+        ? t('flows:files.saveItemsWithOverwrite', { count: files.length })
+        : t('flows:files.saveWithOverwrite');
 
     return (
         <>
@@ -195,14 +199,11 @@ function FlowFilesPromoteDialogForm({ files, flowId, onClose }: FlowFilesPromote
                     </DialogTitle>
                     <DialogDescription>
                         {isMulti ? (
-                            <>
-                                Promote every selected entry from this flow into your global resource library so you can
-                                reuse them in other flows.
-                            </>
+                            t('flows:files.promoteMultiDescription')
                         ) : (
                             <>
-                                Promote <code>{files[0].path}</code> from this flow into your global resource library so
-                                you can reuse it in other flows.
+                                {t('flows:files.promoteSingleDescriptionPrefix')} <code>{files[0].path}</code>
+                                {t('flows:files.promoteSingleDescriptionSuffix')}
                             </>
                         )}
                     </DialogDescription>
@@ -219,7 +220,7 @@ function FlowFilesPromoteDialogForm({ files, flowId, onClose }: FlowFilesPromote
                             name="destination"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>{isMulti ? 'Destination directory' : 'Destination path'}</FormLabel>
+                                    <FormLabel>{isMulti ? t('flows:files.destinationDirectory') : t('flows:files.destinationPath')}</FormLabel>
                                     <FormControl>
                                         <Input
                                             {...field}
@@ -228,21 +229,18 @@ function FlowFilesPromoteDialogForm({ files, flowId, onClose }: FlowFilesPromote
                                             disabled={isPromoting}
                                             placeholder={
                                                 isMulti
-                                                    ? 'Leave empty to save into the library root'
+                                                    ? t('flows:files.destinationMultiPlaceholder')
                                                     : 'results/scan.txt'
                                             }
                                         />
                                     </FormControl>
                                     <FormDescription>
                                         {isMulti ? (
-                                            <>
-                                                Relative directory inside your resource library. Leave empty for the
-                                                root. Each item keeps its current filename.
-                                            </>
+                                            t('flows:files.destinationMultiDescription')
                                         ) : (
                                             <>
-                                                Relative path inside your resource library. Use <code>/</code> to nest
-                                                into subdirectories.
+                                                {t('flows:files.destinationSingleDescriptionPrefix')} <code>/</code>
+                                                {t('flows:files.destinationSingleDescriptionSuffix')}
                                             </>
                                         )}
                                     </FormDescription>
@@ -258,7 +256,7 @@ function FlowFilesPromoteDialogForm({ files, flowId, onClose }: FlowFilesPromote
                                 type="button"
                                 variant="outline"
                             >
-                                Cancel
+                                {t('common:action.cancel')}
                             </Button>
                             <OverwriteButtons
                                 isDisabled={isSubmitDisabled}
@@ -268,7 +266,7 @@ function FlowFilesPromoteDialogForm({ files, flowId, onClose }: FlowFilesPromote
                                 }}
                                 overwriteLabel={overwriteCtaLabel}
                                 primaryIcon={BookmarkPlus}
-                                primaryLabel="Save"
+                                primaryLabel={t('common:action.save')}
                                 primaryType="submit"
                             />
                         </div>

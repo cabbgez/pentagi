@@ -1,5 +1,21 @@
+import type { TFunction } from 'i18next';
+
+import {
+    differenceInDays,
+    differenceInHours,
+    differenceInMinutes,
+    differenceInMonths,
+    differenceInSeconds,
+    differenceInWeeks,
+    differenceInYears,
+    format,
+    isThisYear,
+    isToday,
+    isValid,
+} from 'date-fns';
 import { ColumnsSettings, Copy, FileSymlink, Folder, FolderPlus, FolderUp, Search, Upload, X } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import type { OverwriteConflict } from '@/components/shared/overwrite';
@@ -27,9 +43,9 @@ import {
     type FileManagerBulkAction,
     type FileManagerEmptyAreaAction,
     type FileManagerLabels,
+    type FileManagerSortColumn,
+    type FileManagerSortDirection,
     type FileNode,
-    formatModifiedAbsolute,
-    formatModifiedRelative,
 } from '@/components/shared/file-manager';
 import { OverwriteDialog, useOverwrite } from '@/components/shared/overwrite';
 import { Button } from '@/components/ui/button';
@@ -47,7 +63,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { ResourcesCopyDialog } from '@/features/resources/resources-copy-dialog';
 import { ResourcesMkdirDialog } from '@/features/resources/resources-mkdir-dialog';
 import { ResourcesMoveDialog } from '@/features/resources/resources-move-dialog';
-import { buildResourcesDownloadHref, pluralizeItems, toFileNode } from '@/features/resources/resources-utils';
+import { buildResourcesDownloadHref, toFileNode } from '@/features/resources/resources-utils';
 import { useResourcesDelete } from '@/features/resources/use-resources-delete';
 import { useResourcesMove } from '@/features/resources/use-resources-move';
 import { useResourcesSearch } from '@/features/resources/use-resources-search';
@@ -55,7 +71,9 @@ import { useResourcesUpload } from '@/features/resources/use-resources-upload';
 import { useEffectAfterMount } from '@/hooks/use-effect-after-mount';
 import { useFilesDragAndDrop } from '@/hooks/use-files-drag-and-drop';
 import { usePageStorageKeys } from '@/hooks/use-page-storage-keys';
+import i18n from '@/i18n';
 import { copyToClipboard } from '@/lib/report';
+import { getDateLocale } from '@/lib/utils/i18n-locale';
 import { migrateLegacyViewOptions, saveViewOptions } from '@/lib/view-options-storage';
 import { useResources } from '@/providers/resources-provider';
 
@@ -102,7 +120,105 @@ const seedViewOptions = (storageKey: string): ResourcesViewOptions => {
     };
 };
 
+// The shared FileManager defaults to English-only date strings; localize both
+// the absolute and relative "Modified" column formatters here so the Resources
+// page honours the current UI language.
+const formatModifiedAbsoluteLocalized = (modifiedAt?: Date | string): string => {
+    if (!modifiedAt) {
+        return '';
+    }
+
+    const date = typeof modifiedAt === 'string' ? new Date(modifiedAt) : modifiedAt;
+
+    if (!isValid(date)) {
+        return '';
+    }
+
+    const locale = getDateLocale(i18n.language);
+
+    if (isToday(date)) {
+        return format(date, 'HH:mm');
+    }
+
+    if (isThisYear(date)) {
+        return format(date, 'd MMM, HH:mm', { locale });
+    }
+
+    return format(date, 'd MMM yyyy, HH:mm', { locale });
+};
+
+const formatModifiedRelativeLocalized = (t: TFunction, modifiedAt?: Date | string): string => {
+    if (!modifiedAt) {
+        return '';
+    }
+
+    const date = typeof modifiedAt === 'string' ? new Date(modifiedAt) : modifiedAt;
+
+    if (!isValid(date)) {
+        return '';
+    }
+
+    const now = Date.now();
+    const seconds = differenceInSeconds(now, date);
+    const minutes = differenceInMinutes(now, date);
+    const hours = differenceInHours(now, date);
+    const days = differenceInDays(now, date);
+    const weeks = differenceInWeeks(now, date);
+    const months = differenceInMonths(now, date);
+    const years = differenceInYears(now, date);
+
+    if (seconds < 60 || !minutes) {
+        return t('resources:justNow');
+    }
+
+    if (minutes < 60 || !hours) {
+        return t('resources:minutesAgo', { count: minutes });
+    }
+
+    if (hours < 24 || !days) {
+        return t('resources:hoursAgo', { count: hours });
+    }
+
+    if (days < 7 || !weeks) {
+        return t('resources:daysAgo', { count: days });
+    }
+
+    if (weeks < 4 || !months) {
+        return t('resources:weeksAgo', { count: weeks });
+    }
+
+    if (months < 12 || !years) {
+        return t('resources:monthsAgo', { count: months });
+    }
+
+    return t('resources:yearsAgo', { count: years });
+};
+
+const sortHeaderAriaLabelLocalized = (
+    t: TFunction,
+    column: FileManagerSortColumn,
+    direction: FileManagerSortDirection | null,
+): string => {
+    const columnKey =
+        column === 'name'
+            ? t('resources:sortColumnName')
+            : column === 'size'
+              ? t('resources:sortColumnSize')
+              : t('resources:sortColumnModified');
+
+    if (direction === 'asc') {
+        return t('common:sort.sortBy', { field: `${columnKey} (${t('common:sort.descending')})` });
+    }
+
+    if (direction === 'desc') {
+        return t('common:sort.clearSorting', { field: columnKey });
+    }
+
+    return t('common:sort.sortBy', { field: `${columnKey} (${t('common:sort.ascending')})` });
+};
+
 function Resources() {
+    const { t } = useTranslation();
     const { error, isInitialLoading, refetch, resources } = useResources();
     const search = useResourcesSearch();
 
@@ -138,9 +254,16 @@ function Resources() {
     // the row memo for the whole tree on unrelated re-renders.
     const fileManagerLabels = useMemo<FileManagerLabels>(
         () => ({
-            formatModified: viewOptions.isModifiedRelative ? formatModifiedRelative : formatModifiedAbsolute,
+            columnModified: t('resources:colModified'),
+            columnName: t('resources:colName'),
+            columnSize: t('resources:colSize'),
+            formatModified: viewOptions.isModifiedRelative
+                ? (modifiedAt) => formatModifiedRelativeLocalized(t, modifiedAt)
+                : formatModifiedAbsoluteLocalized,
+            selectedLabel: (count) => t('resources:selectedLabel', { count }),
+            sortHeaderAriaLabel: (column, direction) => sortHeaderAriaLabelLocalized(t, column, direction),
         }),
-        [viewOptions.isModifiedRelative],
+        [t, viewOptions.isModifiedRelative],
     );
 
     // Toolbar / empty-area mkdir + upload always target the library root —
@@ -224,31 +347,34 @@ function Resources() {
         const wasCopied = await copyToClipboard(file.path);
 
         if (wasCopied) {
-            toast.success('Path copied to clipboard');
+            toast.success(t('resources:pathCopied'));
 
             return;
         }
 
-        toast.error('Failed to copy path');
-    }, []);
+        toast.error(t('resources:copyPathFailed'));
+    }, [t]);
 
     // Join the selected paths with `\n` so the result pastes as a clean
     // newline-separated list into the agent chat, a shell command, or notes.
-    const handleBulkCopyPaths = useCallback(async (paths: string[]) => {
-        if (paths.length === 0) {
-            return;
-        }
+    const handleBulkCopyPaths = useCallback(
+        async (paths: string[]) => {
+            if (paths.length === 0) {
+                return;
+            }
 
-        const wasCopied = await copyToClipboard(paths.join('\n'));
+            const wasCopied = await copyToClipboard(paths.join('\n'));
 
-        if (wasCopied) {
-            toast.success(`${paths.length} ${pluralizeItems(paths.length)} copied to clipboard`);
+            if (wasCopied) {
+                toast.success(t('resources:bulkCopyPathsCopied', { count: paths.length }));
 
-            return;
-        }
+                return;
+            }
 
-        toast.error('Failed to copy paths');
-    }, []);
+            toast.error(t('resources:bulkCopyPathsFailed'));
+        },
+        [t],
+    );
 
     /**
      * "Open" gesture — fires on double-click or Enter for a file row.
@@ -304,7 +430,7 @@ function Resources() {
                 appliesToFiles: false,
                 icon: FolderPlus,
                 id: 'resources-mkdir-here',
-                label: 'New folder',
+                label: t('resources:newFolder'),
                 onSelect: handleMkdirHere,
                 separatorBefore: true,
             },
@@ -313,14 +439,14 @@ function Resources() {
                 appliesToFiles: false,
                 icon: Upload,
                 id: 'resources-upload-here',
-                label: 'Upload files',
+                label: t('resources:uploadFiles'),
                 onSelect: handleUploadHere,
             },
             {
                 appliesToDirs: true,
                 icon: FileSymlink,
                 id: 'resources-rename',
-                label: 'Rename or move',
+                label: t('resources:renameOrMove'),
                 onSelect: (file) => setFilesToMove([file]),
                 separatorBefore: true,
             },
@@ -328,12 +454,12 @@ function Resources() {
                 appliesToDirs: true,
                 icon: Copy,
                 id: 'resources-copy',
-                label: 'Copy to…',
+                label: t('resources:copyTo'),
                 onSelect: (file) => setFilesToCopy([file]),
             },
             deleteAction(deletion.requestDelete),
         ],
-        [deletion.requestDelete, handleCopyPath, handleMkdirHere, handleUploadHere],
+        [deletion.requestDelete, handleCopyPath, handleMkdirHere, handleUploadHere, t],
     );
 
     // Bulk-action set, rendered in the bulk-actions bar when at least one row
@@ -358,17 +484,17 @@ function Resources() {
             {
                 icon: FolderPlus,
                 id: 'resources-empty-mkdir',
-                label: 'New folder',
+                label: t('resources:newFolder'),
                 onSelect: () => setIsMkdirOpen(true),
             },
             {
                 icon: Upload,
                 id: 'resources-empty-upload',
-                label: 'Upload files',
+                label: t('resources:uploadFiles'),
                 onSelect: upload.openFilePicker,
             },
         ],
-        [upload.openFilePicker],
+        [t, upload.openFilePicker],
     );
 
     const handleDeleteDialogOpenChange = useCallback(
@@ -383,21 +509,21 @@ function Resources() {
     const pageHeader = (
         <AppHeader>
             <AppHeaderContent>
-                <AppHeaderTitle icon={<Folder className="size-4 shrink-0" />}>Resources</AppHeaderTitle>
+                <AppHeaderTitle icon={<Folder className="size-4 shrink-0" />}>{t('resources:title')}</AppHeaderTitle>
             </AppHeaderContent>
             <AppHeaderActions>
                 <AppHeaderAction
                     disabled={upload.isUploading}
                     icon={<FolderPlus />}
-                    label="New folder"
+                    label={t('resources:newFolder')}
                     onClick={() => setIsMkdirOpen(true)}
                     variant="outline"
                 />
                 <AppHeaderAction
-                    aria-label={upload.isUploading ? 'Uploading...' : 'Upload files'}
+                    aria-label={upload.isUploading ? t('resources:uploading') : t('resources:uploadFiles')}
                     disabled={upload.isUploading}
                     icon={upload.isUploading ? <Spinner variant="circle" /> : <Upload />}
-                    label={upload.isUploading ? 'Uploading...' : 'Upload files'}
+                    label={upload.isUploading ? t('resources:uploading') : t('resources:uploadFiles')}
                     onClick={upload.openFilePicker}
                     variant="secondary"
                 />
@@ -409,13 +535,13 @@ function Resources() {
 
     const noResourcesState = (
         <FileDropZone
-            actionLabel="Upload files"
-            description="Upload documents so PentAGI agents can reference them during your flows. You can also drag & drop files anywhere in this panel."
-            hint="Up to 300 MB per file · 2 GB per upload"
+            actionLabel={t('resources:uploadFiles')}
+            description={t('resources:emptyDescription')}
+            hint={t('resources:uploadLimitHint')}
             isDragging={isDragging}
             isUploading={upload.isUploading}
             onBrowse={upload.openFilePicker}
-            title="No resources yet"
+            title={t('resources:emptyTitle')}
         />
     );
 
@@ -425,9 +551,9 @@ function Resources() {
                 <EmptyMedia variant="icon">
                     <Search />
                 </EmptyMedia>
-                <EmptyTitle>No matches</EmptyTitle>
+                <EmptyTitle>{t('resources:noMatchesTitle')}</EmptyTitle>
                 <EmptyDescription>
-                    No resources match <code>{search.debouncedQuery.trim()}</code>. Try a different query.
+                    {t('resources:noMatchesDescription', { query: search.debouncedQuery.trim() })}
                 </EmptyDescription>
             </EmptyHeader>
         </Empty>
@@ -442,7 +568,7 @@ function Resources() {
                     <ErrorState
                         message={error.message}
                         onRetry={refetch}
-                        title="Error loading resources"
+                        title={t('resources:loadError')}
                     />
                 </div>
             </>
@@ -471,7 +597,7 @@ function Resources() {
                     <div className="bg-primary/10 border-primary pointer-events-none absolute inset-2 z-30 flex items-center justify-center rounded-lg border-2 border-dashed">
                         <div className="text-link flex flex-col items-center gap-2">
                             <FolderUp className="size-8" />
-                            <span className="text-sm font-medium">Drop files to upload</span>
+                            <span className="text-sm font-medium">{t('resources:dropFilesToUpload')}</span>
                         </div>
                     </div>
                 )}
@@ -479,17 +605,17 @@ function Resources() {
                 <div className="flex items-center gap-2">
                     <InputGroup className="max-w-sm flex-1">
                         <InputGroupInput
-                            aria-label="Search resources"
+                            aria-label={t('resources:searchAriaLabel')}
                             autoComplete="off"
                             onChange={(event) => search.setQuery(event.target.value)}
-                            placeholder="Search resources..."
+                            placeholder={t('resources:searchPlaceholder')}
                             type="text"
                             value={search.rawQuery}
                         />
                         {search.rawQuery ? (
                             <InputGroupAddon align="inline-end">
                                 <InputGroupButton
-                                    aria-label="Clear resource search"
+                                    aria-label={t('resources:clearSearchAriaLabel')}
                                     onClick={search.resetSearch}
                                     type="button"
                                 >
@@ -501,7 +627,7 @@ function Resources() {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button
-                                aria-label="Column settings"
+                                aria-label={t('resources:columnSettingsAria')}
                                 className="ml-auto"
                                 size="icon"
                                 variant="outline"
@@ -515,14 +641,14 @@ function Resources() {
                                 onCheckedChange={() => toggleViewOption('size')}
                                 onSelect={(event) => event.preventDefault()}
                             >
-                                Size
+                                {t('resources:colSize')}
                             </DropdownMenuCheckboxItem>
                             <DropdownMenuCheckboxItem
                                 checked={viewOptions.modified}
                                 onCheckedChange={() => toggleViewOption('modified')}
                                 onSelect={(event) => event.preventDefault()}
                             >
-                                Modified
+                                {t('resources:colModified')}
                             </DropdownMenuCheckboxItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuCheckboxItem
@@ -530,7 +656,7 @@ function Resources() {
                                 onCheckedChange={() => toggleViewOption('foldersFirst')}
                                 onSelect={(event) => event.preventDefault()}
                             >
-                                Folders first
+                                {t('resources:foldersFirst')}
                             </DropdownMenuCheckboxItem>
                             <DropdownMenuCheckboxItem
                                 checked={viewOptions.isModifiedRelative}
@@ -538,7 +664,7 @@ function Resources() {
                                 onCheckedChange={() => toggleViewOption('isModifiedRelative')}
                                 onSelect={(event) => event.preventDefault()}
                             >
-                                Relative dates
+                                {t('resources:relativeDates')}
                             </DropdownMenuCheckboxItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -587,13 +713,18 @@ function Resources() {
                 />
 
                 <ConfirmationDialog
-                    confirmText="Delete"
+                    cancelText={t('common:action.cancel')}
+                    confirmText={t('common:action.delete')}
                     handleConfirm={deletion.confirmDelete}
                     handleOpenChange={handleDeleteDialogOpenChange}
                     isOpen={!!deletion.fileToDelete}
                     itemName={deletion.fileToDelete?.name}
-                    itemType={deletion.fileToDelete?.isDir ? 'directory' : 'resource'}
-                    title={deletion.fileToDelete?.isDir ? 'Delete directory' : 'Delete resource'}
+                    itemType={deletion.fileToDelete?.isDir ? t('resources:itemTypeDirectory') : t('resources:itemTypeResource')}
+                    title={
+                        deletion.fileToDelete?.isDir
+                            ? t('resources:deleteDirectory')
+                            : t('resources:deleteResource')
+                    }
                 />
             </div>
         </>

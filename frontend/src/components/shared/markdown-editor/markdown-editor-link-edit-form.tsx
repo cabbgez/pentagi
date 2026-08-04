@@ -2,6 +2,7 @@ import type { Editor } from '@tiptap/react';
 
 import { ArrowUpRight, Check, Trash2 } from 'lucide-react';
 import { useId, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group';
 import { Label } from '@/components/ui/label';
@@ -22,6 +23,7 @@ interface LinkEditFormProps {
 // popover AND the on-link popover (markdown-editor-link-handle.tsx). Seeds its own `url` from `initialUrl` on
 // mount, so consumers give it a fresh `key` per editing session.
 export function LinkEditForm({ autoFocus = true, editor, initialUrl, isActive, onDone }: LinkEditFormProps) {
+    const { t } = useTranslation();
     const [url, setUrl] = useState(initialUrl);
     const urlId = useId();
     const errorId = useId();
@@ -74,7 +76,7 @@ export function LinkEditForm({ autoFocus = true, editor, initialUrl, isActive, o
 
     return (
         <div className="flex flex-col gap-2">
-            <Label htmlFor={urlId}>Link URL</Label>
+            <Label htmlFor={urlId}>{t('common:markdownEditor.linkUrl')}</Label>
             <InputGroup>
                 <InputGroupInput
                     aria-describedby={isInvalid ? errorId : undefined}
@@ -97,7 +99,7 @@ export function LinkEditForm({ autoFocus = true, editor, initialUrl, isActive, o
                     className="gap-0"
                 >
                     <InputGroupButton
-                        aria-label="Apply link"
+                        aria-label={t('common:markdownEditor.applyLink')}
                         disabled={url === '' || isInvalid}
                         onClick={applyLink}
                         size="icon-xs"
@@ -105,7 +107,7 @@ export function LinkEditForm({ autoFocus = true, editor, initialUrl, isActive, o
                         <Check />
                     </InputGroupButton>
                     <InputGroupButton
-                        aria-label="Open link in new tab"
+                        aria-label={t('common:markdownEditor.openLinkInNewTab')}
                         disabled={url === '' || isInvalid}
                         onClick={openInNewTab}
                         size="icon-xs"
@@ -114,7 +116,7 @@ export function LinkEditForm({ autoFocus = true, editor, initialUrl, isActive, o
                     </InputGroupButton>
                     {isActive ? (
                         <InputGroupButton
-                            aria-label="Remove link"
+                            aria-label={t('common:markdownEditor.removeLink')}
                             onClick={removeLink}
                             size="icon-xs"
                         >

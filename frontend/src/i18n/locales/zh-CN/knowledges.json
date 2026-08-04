@@ -1,0 +1,88 @@
+{
+    "list": {
+        "title": "知识库",
+        "newKnowledge": "新建知识文档",
+        "searchAriaLabel": "搜索知识文档",
+        "searchPlaceholder": "语义搜索…",
+        "loadingTitle": "正在加载知识库…",
+        "loadingDescription": "请稍候，正在获取您的知识文档",
+        "loadError": "加载知识库出错",
+        "emptyTitle": "还没有知识文档",
+        "emptyDescription": "创建您的第一个知识文档以丰富向量存储库",
+        "emptyEntityName": "知识文档",
+        "filterPlaceholder": "筛选知识文档…",
+        "colType": "类型",
+        "colQuestion": "问题",
+        "colFlags": "标志",
+        "flowRef": "流程 #{{id}}",
+        "taskRef": "任务 #{{id}}",
+        "subtaskRef": "子任务 #{{id}}",
+        "manual": "手动",
+        "agent": "智能体",
+        "rename": "重命名",
+        "deleting": "删除中…",
+        "openMenuAria": "打开菜单",
+        "renamePlaceholder": "知识问题",
+        "renamed": "知识文档重命名成功",
+        "itemType": "知识文档"
+    },
+    "detail": {
+        "loadError": "加载知识文档出错",
+        "notFound": "未找到知识文档"
+    },
+    "provider": {
+        "createFailed": "知识文档创建失败",
+        "updateFailed": "知识文档更新失败",
+        "renameFailed": "知识文档重命名失败",
+        "deleteFailed": "知识文档删除失败"
+    },
+    "header": {
+        "title": "知识文档",
+        "newKnowledge": "新建知识文档",
+        "doubleClickToRename": "双击重命名",
+        "actionsAria": "知识文档操作",
+        "anonymize": "匿名化",
+        "anonymizing": "匿名化中…",
+        "view": "视图",
+        "rawTooltip": "编辑原始 Markdown"
+    },
+    "form": {
+        "fieldLabels": {
+            "content": "内容",
+            "codeLang": "代码语言",
+            "description": "描述",
+            "question": "问题"
+        },
+        "validation": {
+            "maxLength": "{{label}}不能超过 {{max}} 个字符",
+            "contentRequired": "内容不能为空",
+            "questionRequired": "问题不能为空",
+            "answerTypeRequired": "必须选择答案类型",
+            "codeLangRequired": "必须填写代码语言",
+            "guideTypeRequired": "必须选择指南类型"
+        },
+        "contentAriaLabel": "内容",
+        "contentPlaceholder": "知识内容（将嵌入向量存储库）",
+        "docTypeLabel": "文档类型",
+        "selectTypePlaceholder": "选择类型",
+        "guideTypeLabel": "指南类型",
+        "selectGuideTypePlaceholder": "选择指南类型",
+        "answerTypeLabel": "答案类型",
+        "selectAnswerTypePlaceholder": "选择答案类型",
+        "codeLangPlaceholder": "例如 python、go、typescript",
+        "noMatchingLanguage": "没有匹配的语言",
+        "questionLabel": "问题",
+        "questionPlaceholder": "该文档回答的简短标题或问题",
+        "descriptionLabel": "描述（可选）",
+        "descriptionPlaceholder": "可选的简短描述",
+        "createTitle": "创建新的知识文档",
+        "editTitle": "编辑知识文档",
+        "createDescription": "向向量知识库添加一条记录",
+        "editDescription": "编辑内容或元数据将触发重新嵌入",
+        "chunkOf": "第 {{part}} 块，共 {{total}} 块",
+        "anonymizeNoResult": "匿名化工具未返回结果",
+        "noSensitiveData": "未检测到敏感数据",
+        "contentAnonymized": "内容已匿名化",
+        "anonymizeFailed": "内容匿名化失败"
+    }
+}

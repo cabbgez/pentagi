@@ -1,7 +1,28 @@
 import '@testing-library/jest-dom/vitest';
 
 import { cleanup } from '@testing-library/react';
-import { afterEach } from 'vitest';
+import { afterEach, beforeAll } from 'vitest';
+
+// i18n is initialized at module scope (main.tsx imports '@/i18n'); tests that
+// render components calling `useTranslation()` need it active too. Pin the
+// language to English so existing text-based assertions (getByRole(..., { name:
+// 'Profile' }), …) keep passing — the component tests assert on the English
+// baseline, not on the default zh-CN UI.
+//
+// The localStorage write must happen synchronously at setup-module scope:
+// test files (and their component chains) import '@/i18n' while the module
+// graph loads, and `resolveInitialLanguage()` reads this key at that moment.
+// A write inside beforeAll runs too late — module-level `i18n.t(...)` calls
+// (e.g. zod schema messages) would already be frozen to zh-CN.
+if (typeof window !== 'undefined') {
+    window.localStorage.setItem('i18n_lang', 'en');
+}
+
+beforeAll(async () => {
+    const { default: i18n } = await import('@/i18n');
+
+    await i18n.changeLanguage('en');
+});
 
 // jsdom doesn't implement `Element.prototype.scrollIntoView` — components
 // that call it from effects (e.g. roving-focus + scroll into view) crash in

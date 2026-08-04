@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 
@@ -17,52 +18,67 @@ import { useUser } from '@/providers/user-provider';
 
 import { PasswordChangeForm } from './password-change-form';
 
-const formSchema = z.object({
-    mail: z
-        .string()
-        .min(1, {
-            message: 'Login is required',
-        })
-        .refine(
-            (value) => z.string().email().safeParse(value).success || ['admin', 'demo'].includes(value.toLowerCase()),
-            {
-                message: 'Invalid login',
-            },
-        ),
-    password: z.string().min(1, {
-        message: 'Password is required',
-    }),
-});
-
-const errorMessage = 'Invalid login or password';
-const errorProviderMessage = 'Authentication failed';
-
 interface AuthProviderAction {
     icon: React.ReactNode;
     id: OAuthProvider;
     name: string;
 }
 
-const providerActions: AuthProviderAction[] = [
-    {
-        icon: <Google className="size-5" />,
-        id: 'google',
-        name: 'Continue with Google',
-    },
-    {
-        icon: <Github className="size-5" />,
-        id: 'github',
-        name: 'Continue with GitHub',
-    },
-];
-
 interface LoginFormProps {
     providers: string[];
     returnUrl?: string;
 }
 
+function getProviderActions(t: (key: string) => string): AuthProviderAction[] {
+    return [
+        {
+            icon: <Google className="size-5" />,
+            id: 'google',
+            name: t('auth:login.continueWithGoogle'),
+        },
+        {
+            icon: <Github className="size-5" />,
+            id: 'github',
+            name: t('auth:login.continueWithGithub'),
+        },
+    ];
+}
+
 function LoginForm({ providers, returnUrl = routes.newFlow }: LoginFormProps) {
-    const form = useAppForm<z.infer<typeof formSchema>>({
+    const { i18n, t } = useTranslation();
+
+    // Rebuilt when the language changes so zod messages follow the locale.
+    const formSchema = useMemo(
+        () =>
+            z.object({
+                mail: z
+                    .string()
+                    .min(1, {
+                        message: i18n.t('auth:validation.loginRequired'),
+                    })
+                    .refine(
+                        (value) =>
+                            z.string().email().safeParse(value).success || ['admin', 'demo'].includes(value.toLowerCase()),
+                        {
+                            message: i18n.t('auth:validation.invalidLogin'),
+                        },
+                    ),
+                password: z.string().min(1, {
+                    message: i18n.t('auth:validation.passwordRequired'),
+                }),
+            }),
+        // i18n.language is the reactive signal — the i18n instance itself is
+        // stable. Only the mutable language property belongs in the deps.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [i18n.language],
+    );
+
+    type LoginFormValues = z.infer<typeof formSchema>;
+
+    const errorMessage = () => i18n.t('auth:login.invalidLogin');
+    const errorProviderMessage = () => i18n.t('auth:login.authFailed');
+
+    const form = useAppForm<LoginFormValues>({
         defaultValues: {
             mail: '',
             password: '',
@@ -75,14 +91,16 @@ function LoginForm({ providers, returnUrl = routes.newFlow }: LoginFormProps) {
     const navigate = useNavigate();
     const { authInfo, isAuthenticated, login, loginWithOAuth, setAuth } = useUser();
 
-    const handleSubmit = async (values: z.infer<typeof formSchema>) => {
+    const providerActions = getProviderActions(t);
+
+    const handleSubmit = async (values: LoginFormValues) => {
         setError(null);
 
         try {
             const result = await login(values);
 
             if (!result.success) {
-                setError(result.error || errorMessage);
+                setError(result.error || errorMessage());
 
                 return;
             }
@@ -95,7 +113,7 @@ function LoginForm({ providers, returnUrl = routes.newFlow }: LoginFormProps) {
 
             navigate(returnUrl);
         } catch {
-            setError(errorMessage);
+            setError(errorMessage());
         }
     };
 
@@ -107,14 +125,14 @@ function LoginForm({ providers, returnUrl = routes.newFlow }: LoginFormProps) {
             const result = await loginWithOAuth(provider);
 
             if (!result.success) {
-                setError(result.error || errorProviderMessage);
+                setError(result.error || errorProviderMessage());
 
                 return;
             }
 
             navigate(returnUrl);
         } catch (error) {
-            setError(error instanceof Error ? error.message : errorMessage);
+            setError(error instanceof Error ? error.message : errorMessage());
         } finally {
             setIsSubmitting(false);
         }
@@ -154,10 +172,8 @@ function LoginForm({ providers, returnUrl = routes.newFlow }: LoginFormProps) {
     if (shouldShowPasswordChange) {
         return (
             <div className="mx-auto flex w-[350px] flex-col gap-6">
-                <h1 className="text-center text-3xl font-bold">Update Password</h1>
-                <p className="text-muted-foreground text-center text-sm">
-                    You need to change your password before continuing.
-                </p>
+                <h1 className="text-center text-3xl font-bold">{t('auth:login.updatePasswordTitle')}</h1>
+                <p className="text-muted-foreground text-center text-sm">{t('auth:login.updatePasswordNotice')}</p>
                 <PasswordChangeForm
                     layout="vertical"
                     onSkip={handleSkipPasswordChange}
@@ -200,7 +216,7 @@ function LoginForm({ providers, returnUrl = routes.newFlow }: LoginFormProps) {
                                 <div className="w-full border-t border-gray-300" />
                             </div>
                             <div className="relative flex justify-center text-sm">
-                                <span className="bg-background px-2">or</span>
+                                <span className="bg-background px-2">{t('auth:login.or')}</span>
                             </div>
                         </div>
                     </>
@@ -212,12 +228,12 @@ function LoginForm({ providers, returnUrl = routes.newFlow }: LoginFormProps) {
                         name="mail"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Login</FormLabel>
+                                <FormLabel>{t('auth:login.loginLabel')}</FormLabel>
                                 <FormControl>
                                     <Input
                                         {...field}
                                         autoFocus
-                                        placeholder="Enter your email"
+                                        placeholder={t('auth:login.loginPlaceholder')}
                                     />
                                 </FormControl>
                                 <FormMessage />
@@ -230,11 +246,11 @@ function LoginForm({ providers, returnUrl = routes.newFlow }: LoginFormProps) {
                         name="password"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Password</FormLabel>
+                                <FormLabel>{t('auth:login.passwordLabel')}</FormLabel>
                                 <FormControl>
                                     <InputPassword
                                         {...field}
-                                        placeholder="Enter your password"
+                                        placeholder={t('auth:login.passwordPlaceholder')}
                                     />
                                 </FormControl>
                                 <FormMessage />
@@ -243,7 +259,7 @@ function LoginForm({ providers, returnUrl = routes.newFlow }: LoginFormProps) {
                     />
 
                     <FormSubmitButton className="w-full">
-                        <span>Sign in</span>
+                        <span>{t('auth:login.submit')}</span>
                     </FormSubmitButton>
 
                     {error && <FormMessage>{error}</FormMessage>}

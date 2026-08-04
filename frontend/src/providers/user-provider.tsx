@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import type { AuthInfo } from '@/models/info';
 import type { User } from '@/models/user';
 
+import i18n from '@/i18n';
 import { api } from '@/lib/axios';
 import { routes } from '@/lib/routes';
 import { getReturnUrlParam } from '@/lib/utils/auth';
@@ -161,9 +162,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
             try {
                 await api.get('/auth/logout');
-                toast.success('Successfully logged out');
+                toast.success(i18n.t('auth:toast.loggedOut'));
             } catch {
-                toast.error('Logout failed, but clearing local session');
+                toast.error(i18n.t('auth:toast.logoutFailed'));
             } finally {
                 clearAuth();
                 window.location.href = `${routes.login()}${finalReturnUrl}`;
@@ -197,7 +198,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 setAuth(infoResponse.data);
 
                 if (infoResponse.data.user?.type === 'local' && infoResponse.data.user.password_change_required) {
-                    toast.warning('Password change required');
+                    toast.warning(i18n.t('auth:toast.passwordChangeRequired'));
 
                     return { passwordChangeRequired: true, success: true };
                 }
@@ -350,7 +351,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
                     setAuth(info.data);
                 } else {
                     clearAuth();
-                    toast.error('Session expired. Please login again.');
+                    toast.error(i18n.t('auth:toast.sessionExpired'));
                     navigate(routes.login(location.pathname));
                 }
             } catch {

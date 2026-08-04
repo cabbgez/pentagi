@@ -1,5 +1,6 @@
 import { ArrowDownToLine, ArrowUp, FolderOpen, RefreshCw, TriangleAlert } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
     dedupeOverlappingPaths,
@@ -33,7 +34,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 import { findPullConflicts } from './flow-files-conflicts';
 import { CONTAINER_DEFAULT_PATH, CONTAINER_PATH_PREFIX } from './flow-files-constants';
-import { pluralizeItems } from './flow-files-utils';
 import { useFlowContainerFiles } from './use-flow-container-files';
 import { useFlowFilesPull } from './use-flow-files-pull';
 
@@ -125,6 +125,7 @@ export function FlowFilesPullDialog({ cachedFiles, flowId, isOpen, onClose, onSu
  * owns the listing browser UI and the per-action plan derivation.
  */
 function FlowFilesPullDialogForm({ cachedFiles, flowId, onClose, onSuccess }: FlowFilesPullDialogFormProps) {
+    const { t } = useTranslation();
     const [currentPath, setCurrentPath] = useState<string>(CONTAINER_DEFAULT_PATH);
     const [pathInputValue, setPathInputValue] = useState<string>(CONTAINER_DEFAULT_PATH);
     const [selectedPaths, setSelectedPaths] = useState<ReadonlySet<string>>(() => new Set<string>());
@@ -307,19 +308,19 @@ function FlowFilesPullDialogForm({ cachedFiles, flowId, onClose, onSuccess }: Fl
 
     const primaryLabel = useMemo(() => {
         if (selectedPaths.size === 0) {
-            return `Pull ${currentPath}`;
+            return t('flows:files.pullDir', { path: currentPath });
         }
 
-        return `Pull ${selectedPaths.size} ${pluralizeItems(selectedPaths.size)}`;
-    }, [currentPath, selectedPaths.size]);
+        return t('flows:files.pullItems', { count: selectedPaths.size });
+    }, [currentPath, selectedPaths.size, t]);
 
     const overwriteLabel = useMemo(() => {
         if (selectedPaths.size === 0) {
-            return 'Pull with overwrite';
+            return t('flows:files.pullWithOverwrite');
         }
 
-        return `Pull ${selectedPaths.size} with overwrite`;
-    }, [selectedPaths.size]);
+        return t('flows:files.pullItemsWithOverwrite', { count: selectedPaths.size });
+    }, [selectedPaths.size, t]);
 
     // The FileManager doesn't ship a "selection only" mode — passing an empty
     // bulk-actions array is the cheapest way to surface the checkboxes.
@@ -331,7 +332,7 @@ function FlowFilesPullDialogForm({ cachedFiles, flowId, onClose, onSuccess }: Fl
                 <EmptyMedia variant="icon">
                     <FolderOpen />
                 </EmptyMedia>
-                <EmptyTitle>Failed to list container</EmptyTitle>
+                <EmptyTitle>{t('flows:files.failedToListContainer')}</EmptyTitle>
                 <EmptyDescription>{listingError.message}</EmptyDescription>
             </EmptyHeader>
         </Empty>
@@ -341,10 +342,9 @@ function FlowFilesPullDialogForm({ cachedFiles, flowId, onClose, onSuccess }: Fl
                 <EmptyMedia variant="icon">
                     <TriangleAlert />
                 </EmptyMedia>
-                <EmptyTitle>Nothing readable here</EmptyTitle>
+                <EmptyTitle>{t('flows:files.nothingReadable')}</EmptyTitle>
                 <EmptyDescription>
-                    None of the {listingFailures.length} {listingFailures.length === 1 ? 'entry' : 'entries'} in{' '}
-                    <code>{currentPath}</code> could be read.
+                    {t('flows:files.entriesCouldNotBeRead', { count: listingFailures.length, path: currentPath })}
                 </EmptyDescription>
             </EmptyHeader>
             <ul className="text-muted-foreground max-w-full space-y-1 px-4 text-left text-xs">
@@ -356,7 +356,7 @@ function FlowFilesPullDialogForm({ cachedFiles, flowId, onClose, onSuccess }: Fl
                         <span className="text-foreground font-medium">{failure.name}</span> — {failure.message}
                     </li>
                 ))}
-                {listingFailures.length > 5 && <li>…and {listingFailures.length - 5} more</li>}
+                {listingFailures.length > 5 && <li>{t('flows:files.andMore', { count: listingFailures.length - 5 })}</li>}
             </ul>
         </Empty>
     ) : (
@@ -365,10 +365,8 @@ function FlowFilesPullDialogForm({ cachedFiles, flowId, onClose, onSuccess }: Fl
                 <EmptyMedia variant="icon">
                     <FolderOpen />
                 </EmptyMedia>
-                <EmptyTitle>Directory is empty</EmptyTitle>
-                <EmptyDescription>
-                    Nothing to pull from <code>{currentPath}</code>.
-                </EmptyDescription>
+                <EmptyTitle>{t('flows:files.directoryEmpty')}</EmptyTitle>
+                <EmptyDescription>{t('flows:files.nothingToPull', { path: currentPath })}</EmptyDescription>
             </EmptyHeader>
         </Empty>
     );
@@ -379,18 +377,18 @@ function FlowFilesPullDialogForm({ cachedFiles, flowId, onClose, onSuccess }: Fl
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <ArrowDownToLine className="size-4" />
-                        Pull from container
+                        {t('flows:files.pullFromContainer')}
                     </DialogTitle>
                     <DialogDescription>
-                        Browse the running container and select files or directories to sync into the local cache under{' '}
-                        <code>container/</code>. Click the arrow on a folder row or double-click the row to drill in.
+                        {t('flows:files.pullDialogDescriptionPrefix')} <code>container/</code>
+                        {t('flows:files.pullDialogDescriptionSuffix')}
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="flex flex-col gap-3">
                     <div className="flex items-end gap-2">
                         <div className="flex-1">
-                            <Label className="mb-1.5 block text-sm font-normal">Container path</Label>
+                            <Label className="mb-1.5 block text-sm font-normal">{t('flows:files.containerPath')}</Label>
                             <Autocomplete
                                 onCommit={navigateTo}
                                 onValueChange={setPathInputValue}
@@ -402,7 +400,7 @@ function FlowFilesPullDialogForm({ cachedFiles, flowId, onClose, onSuccess }: Fl
                                     placeholder="/work"
                                 />
                                 <AutocompleteContent>
-                                    <AutocompleteEmpty>No matching paths</AutocompleteEmpty>
+                                    <AutocompleteEmpty>{t('flows:files.noMatchingPaths')}</AutocompleteEmpty>
                                     <AutocompleteGroup>
                                         {pathSuggestions.map((suggestion) => (
                                             <AutocompleteItem
@@ -421,7 +419,7 @@ function FlowFilesPullDialogForm({ cachedFiles, flowId, onClose, onSuccess }: Fl
                             <TooltipTrigger asChild>
                                 <span>
                                     <Button
-                                        aria-label="Parent directory"
+                                        aria-label={t('flows:files.parentDirectoryAria')}
                                         disabled={isUpDisabled}
                                         onClick={handleNavigateUp}
                                         size="icon-sm"
@@ -432,14 +430,14 @@ function FlowFilesPullDialogForm({ cachedFiles, flowId, onClose, onSuccess }: Fl
                                     </Button>
                                 </span>
                             </TooltipTrigger>
-                            <TooltipContent>Parent directory</TooltipContent>
+                            <TooltipContent>{t('flows:files.parentDirectory')}</TooltipContent>
                         </Tooltip>
 
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <span>
                                     <Button
-                                        aria-label="Refresh listing"
+                                        aria-label={t('flows:files.refreshListingAria')}
                                         disabled={isListingLoading || isPulling}
                                         onClick={handleRefresh}
                                         size="icon-sm"
@@ -450,7 +448,7 @@ function FlowFilesPullDialogForm({ cachedFiles, flowId, onClose, onSuccess }: Fl
                                     </Button>
                                 </span>
                             </TooltipTrigger>
-                            <TooltipContent>Refresh listing</TooltipContent>
+                            <TooltipContent>{t('flows:files.refreshListing')}</TooltipContent>
                         </Tooltip>
                     </div>
 
@@ -458,16 +456,18 @@ function FlowFilesPullDialogForm({ cachedFiles, flowId, onClose, onSuccess }: Fl
                         <Alert>
                             <TriangleAlert />
                             <AlertTitle>
-                                {listingFailures.length} {listingFailures.length === 1 ? 'entry' : 'entries'} could not
-                                be read
+                                {t('flows:files.entriesCouldNotBeReadTitle', { count: listingFailures.length })}
                             </AlertTitle>
                             <AlertDescription>
-                                The readable entries are shown below. Skipped:{' '}
+                                {t('flows:files.entriesSkippedPrefix')}{' '}
                                 {listingFailures
                                     .slice(0, 5)
                                     .map((failure) => failure.name)
                                     .join(', ')}
-                                {listingFailures.length > 5 ? `, and ${listingFailures.length - 5} more` : ''}.
+                                {listingFailures.length > 5
+                                    ? t('flows:files.andMoreSuffix', { count: listingFailures.length - 5 })
+                                    : ''}
+                                .
                             </AlertDescription>
                         </Alert>
                     )}
@@ -475,10 +475,9 @@ function FlowFilesPullDialogForm({ cachedFiles, flowId, onClose, onSuccess }: Fl
                     {isListingTruncated && (
                         <Alert>
                             <TriangleAlert />
-                            <AlertTitle>Directory truncated</AlertTitle>
+                            <AlertTitle>{t('flows:files.directoryTruncated')}</AlertTitle>
                             <AlertDescription>
-                                This directory has too many entries to list in full; only the first {files.length} are
-                                shown. Open a subfolder to see the rest.
+                                {t('flows:files.directoryTruncatedDescription', { count: files.length })}
                             </AlertDescription>
                         </Alert>
                     )}
@@ -502,7 +501,7 @@ function FlowFilesPullDialogForm({ cachedFiles, flowId, onClose, onSuccess }: Fl
                         type="button"
                         variant="outline"
                     >
-                        Cancel
+                        {t('common:action.cancel')}
                     </Button>
                     <OverwriteButtons
                         isDisabled={isPullDisabled}

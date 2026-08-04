@@ -1,5 +1,7 @@
 import { format, isThisYear, isToday } from 'date-fns';
-import { enUS } from 'date-fns/locale';
+
+import i18n from '@/i18n';
+import { getDateLocale, getIntlLocale } from '@/lib/utils/i18n-locale';
 
 export const formatName = (name?: string): string =>
     (name || '')
@@ -7,19 +9,22 @@ export const formatName = (name?: string): string =>
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
 
-export const formatDate = (date: Date) => {
+export const formatDate = (date: Date, language?: string) => {
+    const locale = getDateLocale(language ?? i18n.language);
+
     if (isToday(date)) {
         return format(date, 'HH:mm:ss');
     }
 
     if (isThisYear(date)) {
-        return format(date, 'HH:mm, d MMM', { locale: enUS });
+        return format(date, 'HH:mm, d MMM', { locale });
     }
 
-    return format(date, 'HH:mm, d MMM yyyy', { locale: enUS });
+    return format(date, 'HH:mm, d MMM yyyy', { locale });
 };
 
-export const formatNumber = (value: number): string => new Intl.NumberFormat('en-US').format(value);
+export const formatNumber = (value: number, language?: string): string =>
+    new Intl.NumberFormat(getIntlLocale(language ?? i18n.language)).format(value);
 
 export const formatTokenCount = (count: number): string => {
     if (count >= 1_000_000_000) {

@@ -1,5 +1,6 @@
 import { Copy } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { VectorStoreLogFragmentFragment } from '@/graphql/types';
 
@@ -67,6 +68,7 @@ const containsSearchValue = (text: null | string | undefined, searchValue: strin
 };
 
 function FlowVectorStore({ log, searchValue = '' }: FlowVectorStoreProps) {
+    const { t } = useTranslation();
     const { action, createdAt, executor, initiator, query, result, subtaskId, taskId } = log;
 
     const searchChecks = useMemo(() => {
@@ -134,7 +136,7 @@ function FlowVectorStore({ log, searchValue = '' }: FlowVectorStoreProps) {
                             className="cursor-pointer"
                             onClick={() => setIsDetailsVisible(!isDetailsVisible)}
                         >
-                            {isDetailsVisible ? 'Hide details' : 'Show details'}
+                            {isDetailsVisible ? t('flows:common.hideDetails') : t('flows:common.showDetails')}
                         </div>
                         {isDetailsVisible && (
                             <>
@@ -169,7 +171,7 @@ function FlowVectorStore({ log, searchValue = '' }: FlowVectorStoreProps) {
                             onClick={handleCopy}
                         />
                     </TooltipTrigger>
-                    <TooltipContent>Copy</TooltipContent>
+                    <TooltipContent>{t('common:action.copy')}</TooltipContent>
                 </Tooltip>
                 <span className="text-muted-foreground/50">{formatDate(new Date(createdAt))}</span>
                 {taskId && (

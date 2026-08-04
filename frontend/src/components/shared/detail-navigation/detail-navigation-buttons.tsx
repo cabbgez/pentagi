@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -32,6 +33,7 @@ export function DetailNavigationButtons<T extends { id: string }>({
     sheetTitle,
     size = 'default',
 }: DetailNavigationButtonsProps<T>) {
+    const { t } = useTranslation();
     const lowerTitle = sheetTitle.toLowerCase();
     const isSm = size === 'sm';
     const sideButtonSize = isSm ? 'size-7' : 'size-8';
@@ -43,7 +45,7 @@ export function DetailNavigationButtons<T extends { id: string }>({
             <Tooltip>
                 <TooltipTrigger asChild>
                     <Button
-                        aria-label="Previous"
+                        aria-label={t('common:detailNav.previous')}
                         className={cn(sideButtonSize, 'rounded-r-none border-r-0 p-0')}
                         disabled={!controller.prevId}
                         onClick={controller.goToPrev}
@@ -54,7 +56,7 @@ export function DetailNavigationButtons<T extends { id: string }>({
                         <ChevronLeft />
                     </Button>
                 </TooltipTrigger>
-                <TooltipContent>Previous</TooltipContent>
+                <TooltipContent>{t('common:detailNav.previous')}</TooltipContent>
             </Tooltip>
             <Tooltip>
                 <TooltipTrigger asChild>
@@ -72,12 +74,12 @@ export function DetailNavigationButtons<T extends { id: string }>({
                         <span style={{ minWidth: `${widestLabel.length}ch` }}>{controller.positionLabel}</span>
                     </Button>
                 </TooltipTrigger>
-                <TooltipContent>Show all matching {lowerTitle}</TooltipContent>
+                <TooltipContent>{t('common:detailNav.showAllMatching', { title: lowerTitle })}</TooltipContent>
             </Tooltip>
             <Tooltip>
                 <TooltipTrigger asChild>
                     <Button
-                        aria-label="Next"
+                        aria-label={t('common:detailNav.next')}
                         className={cn(sideButtonSize, 'rounded-l-none border-l-0 p-0')}
                         disabled={!controller.nextId}
                         onClick={controller.goToNext}
@@ -88,7 +90,7 @@ export function DetailNavigationButtons<T extends { id: string }>({
                         <ChevronRight />
                     </Button>
                 </TooltipTrigger>
-                <TooltipContent>Next</TooltipContent>
+                <TooltipContent>{t('common:detailNav.next')}</TooltipContent>
             </Tooltip>
         </div>
     );

@@ -1,5 +1,6 @@
 import { skipToken, useQuery } from '@apollo/client/react';
 import { useCallback, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -22,6 +23,7 @@ import { routes } from '@/lib/routes';
 import { useKnowledges } from '@/providers/knowledges-provider';
 
 function Knowledge() {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const { knowledgeId } = useParams<{ knowledgeId?: string }>();
     const { createKnowledge, updateKnowledge } = useKnowledges();
@@ -52,10 +54,10 @@ function Knowledge() {
         }
 
         if (!knowledge) {
-            toast.error('Knowledge document not found');
+            toast.error(t('knowledges:detail.notFound'));
             navigate(routes.knowledges, { replace: true });
         }
-    }, [isNew, isLoadingKnowledge, knowledge, loadError, navigate]);
+    }, [isNew, isLoadingKnowledge, knowledge, loadError, navigate, t]);
 
     const initialValues = useMemo<FormValues>(
         () => (knowledge ? documentToFormValues(knowledge) : newDocumentDefaults),
@@ -99,7 +101,7 @@ function Knowledge() {
                     <ErrorState
                         message={loadError.message}
                         onRetry={() => refetch()}
-                        title="Error loading knowledge document"
+                        title={t('knowledges:detail.loadError')}
                     />
                 </div>
             </KnowledgeLayout>

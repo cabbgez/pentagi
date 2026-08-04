@@ -2,6 +2,7 @@ import type { Editor } from '@tiptap/react';
 
 import { Check, Trash2 } from 'lucide-react';
 import { useId, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Input } from '@/components/ui/input';
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group';
@@ -31,6 +32,7 @@ export function ImageEditForm({
     isEditing,
     onDone,
 }: ImageEditFormProps) {
+    const { t } = useTranslation();
     const [src, setSrc] = useState(initialSrc);
     const [alt, setAlt] = useState(initialAlt);
     const srcId = useId();
@@ -77,7 +79,7 @@ export function ImageEditForm({
     return (
         <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-1.5">
-                <Label htmlFor={srcId}>Image URL</Label>
+                <Label htmlFor={srcId}>{t('common:markdownEditor.imageUrl')}</Label>
                 <InputGroup>
                     <InputGroupInput
                         aria-describedby={isInvalid ? errorId : undefined}
@@ -95,7 +97,11 @@ export function ImageEditForm({
                         className="gap-0"
                     >
                         <InputGroupButton
-                            aria-label={isEditing ? 'Apply image' : 'Insert image'}
+                            aria-label={
+                                isEditing
+                                    ? t('common:markdownEditor.applyImage')
+                                    : t('common:markdownEditor.insertImage')
+                            }
                             disabled={src === '' || isInvalid}
                             onClick={apply}
                             size="icon-xs"
@@ -104,7 +110,7 @@ export function ImageEditForm({
                         </InputGroupButton>
                         {isEditing ? (
                             <InputGroupButton
-                                aria-label="Remove image"
+                                aria-label={t('common:markdownEditor.removeImage')}
                                 onClick={remove}
                                 size="icon-xs"
                             >
@@ -115,12 +121,12 @@ export function ImageEditForm({
                 </InputGroup>
             </div>
             <div className="flex flex-col gap-1.5">
-                <Label htmlFor={altId}>Alt text (optional)</Label>
+                <Label htmlFor={altId}>{t('common:markdownEditor.altTextOptional')}</Label>
                 <Input
                     id={altId}
                     onChange={(event) => setAlt(event.target.value)}
                     onKeyDown={applyOnEnter}
-                    placeholder="Describe the image"
+                    placeholder={t('common:markdownEditor.describeImage')}
                     value={alt}
                 />
             </div>

@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Check, ChevronDown, ListFilter, Plus, Search, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { useDebouncedCallback } from 'use-debounce';
 import { z } from 'zod';
 
@@ -55,6 +56,7 @@ function AssistantsDropdown({
     providers,
     selectedAssistantId,
 }: AssistantsDropdownProps) {
+    const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [currentAssistant, setCurrentAssistant] = useState<AssistantFragmentFragment | null>(null);
@@ -147,7 +149,7 @@ function AssistantsDropdown({
 
                 <div className="flex flex-1 items-center gap-2 overflow-hidden">
                     <span className="truncate text-sm">{assistant.title}</span>
-                    {!isValid && <span className="text-destructive shrink-0 text-xs">(unavailable)</span>}
+                    {!isValid && <span className="text-destructive shrink-0 text-xs">{t('flows:messages.assistantUnavailable')}</span>}
                 </div>
 
                 <Check
@@ -159,7 +161,7 @@ function AssistantsDropdown({
 
                 {!isDisabled && (
                     <Button
-                        aria-label={`Delete ${assistant.title}`}
+                        aria-label={t('flows:messages.deleteAssistantAria', { title: assistant.title })}
                         className="text-muted-foreground hover:text-destructive absolute top-1/2 right-0.5 shrink-0 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100"
                         onClick={(event) => {
                             event.stopPropagation();
@@ -183,7 +185,7 @@ function AssistantsDropdown({
             >
                 <PopoverTrigger asChild>
                     <Button
-                        aria-label="Select assistant"
+                        aria-label={t('flows:messages.selectAssistantAria')}
                         className="px-2"
                         disabled={isAssistantCreating}
                         variant="outline"
@@ -201,7 +203,7 @@ function AssistantsDropdown({
                             </>
                         ) : (
                             <span className="bg-muted text-muted-foreground flex h-5 shrink-0 items-center justify-center rounded px-1 text-xs font-medium">
-                                New
+                                {t('flows:messages.newBadge')}
                             </span>
                         )}
                         <ChevronDown className="opacity-50" />
@@ -212,9 +214,9 @@ function AssistantsDropdown({
                     className="w-[400px] p-0"
                 >
                     <Command>
-                        <CommandInput placeholder="Search assistants..." />
+                        <CommandInput placeholder={t('flows:messages.searchAssistantsPlaceholder')} />
                         <CommandList>
-                            <CommandEmpty>No assistants found.</CommandEmpty>
+                            <CommandEmpty>{t('flows:messages.noAssistantsFound')}</CommandEmpty>
 
                             {!isDisabled && (
                                 <CommandGroup>
@@ -227,13 +229,13 @@ function AssistantsDropdown({
                                         value="create-new-assistant"
                                     >
                                         <Plus />
-                                        Create new assistant
+                                        {t('flows:messages.createNewAssistant')}
                                     </CommandItem>
                                 </CommandGroup>
                             )}
 
                             {assistantsGroup.active.length > 0 && (
-                                <CommandGroup heading={`Active (${assistantsGroup.active.length})`}>
+                                <CommandGroup heading={t('flows:messages.activeGroup', { count: assistantsGroup.active.length })}>
                                     {assistantsGroup.active.map(({ assistant, index }) =>
                                         renderAssistantItem(assistant, index),
                                     )}
@@ -241,7 +243,7 @@ function AssistantsDropdown({
                             )}
 
                             {assistantsGroup.finished.length > 0 && (
-                                <CommandGroup heading={`Finished (${assistantsGroup.finished.length})`}>
+                                <CommandGroup heading={t('flows:messages.finishedGroup', { count: assistantsGroup.finished.length })}>
                                     {assistantsGroup.finished.map(({ assistant, index }) =>
                                         renderAssistantItem(assistant, index),
                                     )}
@@ -249,7 +251,7 @@ function AssistantsDropdown({
                             )}
 
                             {assistantsGroup.failed.length > 0 && (
-                                <CommandGroup heading={`Failed (${assistantsGroup.failed.length})`}>
+                                <CommandGroup heading={t('flows:messages.failedGroup', { count: assistantsGroup.failed.length })}>
                                     {assistantsGroup.failed.map(({ assistant, index }) =>
                                         renderAssistantItem(assistant, index),
                                     )}
@@ -261,14 +263,14 @@ function AssistantsDropdown({
             </Popover>
 
             <ConfirmationDialog
-                cancelText="Cancel"
-                confirmText="Delete"
+                cancelText={t('common:action.cancel')}
+                confirmText={t('common:action.delete')}
                 handleConfirm={handleConfirmDelete}
                 handleOpenChange={setDeleteDialogOpen}
                 isOpen={deleteDialogOpen}
                 itemName={currentAssistant?.title}
-                itemType="assistant"
-                title="Delete Assistant"
+                itemType={t('flows:messages.assistantNoun')}
+                title={t('flows:messages.deleteAssistantTitle')}
             />
         </>
     );
@@ -279,6 +281,7 @@ const searchFormSchema = z.object({
 });
 
 function FlowAssistantMessages({ className }: FlowAssistantMessagesProps) {
+    const { t } = useTranslation();
     const { providers } = useProviders();
 
     const {
@@ -447,40 +450,40 @@ function FlowAssistantMessages({ className }: FlowAssistantMessagesProps) {
 
     const placeholder = useMemo(() => {
         if (!flowId) {
-            return 'Select a flow...';
+            return t('flows:messages.selectFlowPlaceholder');
         }
 
         if (isAssistantCreating) {
-            return 'Creating assistant...';
+            return t('flows:messages.creatingAssistantPlaceholder');
         }
 
         if (!selectedAssistant?.status) {
-            return 'Type a message to create a new assistant...';
+            return t('flows:messages.typeMessageCreatePlaceholder');
         }
 
         switch (selectedAssistant.status) {
             case StatusType.Created: {
-                return 'Assistant is starting...';
+                return t('flows:messages.assistantStartingPlaceholder');
             }
 
             case StatusType.Failed:
             case StatusType.Finished: {
-                return 'This assistant session has ended. Create a new one to continue.';
+                return t('flows:messages.assistantEndedPlaceholder');
             }
 
             case StatusType.Running: {
-                return 'Assistant is running... Click Stop to interrupt';
+                return t('flows:messages.assistantRunningPlaceholder');
             }
 
             case StatusType.Waiting: {
-                return 'Continue the conversation...';
+                return t('flows:messages.continueConversationPlaceholder');
             }
 
             default: {
-                return 'Type your message...';
+                return t('flows:messages.typeMessagePlaceholder');
             }
         }
-    }, [flowId, isAssistantCreating, selectedAssistant?.status]);
+    }, [flowId, isAssistantCreating, selectedAssistant?.status, t]);
 
     const assistantStatus = selectedAssistant?.status;
     const isFormDisabled =
@@ -521,13 +524,13 @@ function FlowAssistantMessages({ className }: FlowAssistantMessagesProps) {
                                                 {...field}
                                                 autoComplete="off"
                                                 disabled={isAssistantCreating}
-                                                placeholder="Search messages..."
+                                                placeholder={t('flows:messages.searchMessagesPlaceholder')}
                                                 type="text"
                                             />
                                             {field.value && (
                                                 <InputGroupAddon align="inline-end">
                                                     <InputGroupButton
-                                                        aria-label="Clear message search"
+                                                        aria-label={t('flows:messages.clearSearchAria')}
                                                         disabled={isAssistantCreating}
                                                         onClick={() => {
                                                             form.reset({ search: '' });
@@ -555,8 +558,8 @@ function FlowAssistantMessages({ className }: FlowAssistantMessagesProps) {
                         <EmptyMedia variant="icon">
                             <Spinner variant="circle" />
                         </EmptyMedia>
-                        <EmptyTitle>Creating assistant...</EmptyTitle>
-                        <EmptyDescription>Please wait while we set up your new assistant</EmptyDescription>
+                        <EmptyTitle>{t('flows:messages.creatingAssistantTitle')}</EmptyTitle>
+                        <EmptyDescription>{t('flows:messages.creatingAssistantDescription')}</EmptyDescription>
                     </EmptyHeader>
                 </Empty>
             ) : selectedAssistantId ? (
@@ -578,7 +581,7 @@ function FlowAssistantMessages({ className }: FlowAssistantMessagesProps) {
 
                         {!isScrolledToBottom && (
                             <Button
-                                aria-label="Scroll to latest message"
+                                aria-label={t('flows:messages.scrollToLatestAria')}
                                 className="absolute right-4 bottom-4 z-10 shadow-md hover:shadow-lg"
                                 onClick={() => scrollToEnd()}
                                 size="icon-sm"
@@ -598,8 +601,8 @@ function FlowAssistantMessages({ className }: FlowAssistantMessagesProps) {
                             <EmptyMedia variant="icon">
                                 <ListFilter />
                             </EmptyMedia>
-                            <EmptyTitle>No messages found</EmptyTitle>
-                            <EmptyDescription>Try adjusting your search or filter parameters</EmptyDescription>
+                            <EmptyTitle>{t('flows:messages.noMessagesFound')}</EmptyTitle>
+                            <EmptyDescription>{t('flows:common.noResultsDescription')}</EmptyDescription>
                         </EmptyHeader>
                         <EmptyContent>
                             <Button
@@ -607,7 +610,7 @@ function FlowAssistantMessages({ className }: FlowAssistantMessagesProps) {
                                 variant="outline"
                             >
                                 <X />
-                                Reset filters
+                                {t('flows:common.resetFilters')}
                             </Button>
                         </EmptyContent>
                     </Empty>
@@ -617,8 +620,8 @@ function FlowAssistantMessages({ className }: FlowAssistantMessagesProps) {
                             <EmptyMedia variant="icon">
                                 <Plus />
                             </EmptyMedia>
-                            <EmptyTitle>No messages</EmptyTitle>
-                            <EmptyDescription>No messages found for this assistant</EmptyDescription>
+                            <EmptyTitle>{t('flows:messages.noMessagesTitle')}</EmptyTitle>
+                            <EmptyDescription>{t('flows:messages.noMessagesForAssistant')}</EmptyDescription>
                         </EmptyHeader>
                     </Empty>
                 )
@@ -628,8 +631,8 @@ function FlowAssistantMessages({ className }: FlowAssistantMessagesProps) {
                         <EmptyMedia variant="icon">
                             <Plus />
                         </EmptyMedia>
-                        <EmptyTitle>New assistant</EmptyTitle>
-                        <EmptyDescription>Type a message below to create a new assistant...</EmptyDescription>
+                        <EmptyTitle>{t('flows:messages.newAssistantTitle')}</EmptyTitle>
+                        <EmptyDescription>{t('flows:messages.newAssistantDescription')}</EmptyDescription>
                     </EmptyHeader>
                 </Empty>
             )}

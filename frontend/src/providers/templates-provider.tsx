@@ -11,6 +11,7 @@ import {
     FlowTemplateUpdatedDocument,
     UpdateFlowTemplateDocument,
 } from '@/graphql/types';
+import i18n from '@/i18n';
 import { Log } from '@/lib/log';
 import { useUser } from '@/providers/user-provider';
 
@@ -100,8 +101,8 @@ export function TemplatesProvider({ children }: TemplatesProviderProps) {
                     },
                 });
             } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : 'Failed to create template';
-                toast.error('Failed to create template', {
+                const errorMessage = error instanceof Error ? error.message : i18n.t('templates:provider.createFailed');
+                toast.error(i18n.t('templates:provider.createFailed'), {
                     description: errorMessage,
                 });
                 Log.error('Error creating template:', error);
@@ -124,8 +125,8 @@ export function TemplatesProvider({ children }: TemplatesProviderProps) {
                     },
                 });
             } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : 'Failed to update template';
-                toast.error('Failed to update template', {
+                const errorMessage = error instanceof Error ? error.message : i18n.t('templates:provider.updateFailed');
+                toast.error(i18n.t('templates:provider.updateFailed'), {
                     description: errorMessage,
                 });
                 Log.error('Error updating template:', error);
@@ -144,8 +145,8 @@ export function TemplatesProvider({ children }: TemplatesProviderProps) {
                     },
                 });
             } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : 'Failed to delete template';
-                toast.error('Failed to delete template', {
+                const errorMessage = error instanceof Error ? error.message : i18n.t('templates:provider.deleteFailed');
+                toast.error(i18n.t('templates:provider.deleteFailed'), {
                     description: errorMessage,
                 });
                 Log.error('Error deleting template:', error);

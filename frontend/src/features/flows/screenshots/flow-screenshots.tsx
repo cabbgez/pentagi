@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Camera, ChevronDown, Search, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { useDebouncedCallback } from 'use-debounce';
 import { z } from 'zod';
 
@@ -19,6 +20,7 @@ const searchFormSchema = z.object({
 });
 
 function FlowScreenshots() {
+    const { t } = useTranslation();
     const { flowData, flowId } = useFlow();
 
     const screenshots = useMemo(() => flowData?.screenshots ?? [], [flowData?.screenshots]);
@@ -93,13 +95,13 @@ function FlowScreenshots() {
                                         <InputGroupInput
                                             {...field}
                                             autoComplete="off"
-                                            placeholder="Search screenshots..."
+                                            placeholder={t('flows:screenshots.searchPlaceholder')}
                                             type="text"
                                         />
                                         {field.value && (
                                             <InputGroupAddon align="inline-end">
                                                 <InputGroupButton
-                                                    aria-label="Clear screenshot search"
+                                                    aria-label={t('flows:screenshots.clearSearchAria')}
                                                     onClick={() => {
                                                         form.reset({ search: '' });
                                                         setDebouncedSearchValue('');
@@ -136,7 +138,7 @@ function FlowScreenshots() {
 
                     {!isScrolledToBottom && (
                         <Button
-                            aria-label="Scroll to latest screenshot"
+                            aria-label={t('flows:screenshots.scrollToLatestAria')}
                             className="absolute right-4 bottom-4 z-10 shadow-md hover:shadow-lg"
                             onClick={() => scrollToEnd()}
                             size="icon-sm"
@@ -156,8 +158,8 @@ function FlowScreenshots() {
                         <EmptyMedia variant="icon">
                             <Camera />
                         </EmptyMedia>
-                        <EmptyTitle>No screenshots available</EmptyTitle>
-                        <EmptyDescription>Screenshots will appear here once the agent captures them</EmptyDescription>
+                        <EmptyTitle>{t('flows:screenshots.noScreenshots')}</EmptyTitle>
+                        <EmptyDescription>{t('flows:screenshots.noScreenshotsDescription')}</EmptyDescription>
                     </EmptyHeader>
                 </Empty>
             )}

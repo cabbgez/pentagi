@@ -1,6 +1,7 @@
 import * as PopoverPrimitive from '@radix-ui/react-popover';
 import { Command as CommandPrimitive, useCommandState } from 'cmdk';
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
     Command,
@@ -201,6 +202,7 @@ function Autocomplete({
     shouldFilter,
     value: valueProp,
 }: AutocompleteProps) {
+    const { t } = useTranslation();
     const [inputValue, setInputValue] = useControllable<string>(valueProp, defaultValue, onValueChange);
     const [open, setOpen] = useControllable<boolean>(openProp, defaultOpen, onOpenChange);
     const inputRef = React.useRef<HTMLInputElement | null>(null);
@@ -256,7 +258,7 @@ function Autocomplete({
             >
                 <Command
                     filter={filter ?? substringFilter}
-                    label="Suggestions"
+                    label={t('common:autocomplete.suggestions')}
                     shouldFilter={shouldFilter}
                 >
                     {children}

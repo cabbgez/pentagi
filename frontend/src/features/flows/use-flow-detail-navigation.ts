@@ -1,8 +1,9 @@
 import { useDetailNavigation } from '@/components/shared/detail-navigation';
+import i18n from '@/i18n';
 import { routes } from '@/lib/routes';
 import { type Flow, useFlows } from '@/providers/flows-provider';
 
-const getLabel = (item: Flow) => item.title || `Flow #${item.id}`;
+const getLabel = (item: Flow) => item.title || i18n.t('flows:detail.flowFallback', { id: item.id });
 const getSearchableText = (item: Flow) => item.title;
 const getId = (item: Flow) => String(item.id);
 const getHref = (item: Flow) => routes.flow(item.id);

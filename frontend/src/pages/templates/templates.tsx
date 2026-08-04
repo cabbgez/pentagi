@@ -2,6 +2,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 
 import { Ellipsis, FileText, Pencil, PencilLine, Plus, Trash } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -34,6 +35,7 @@ import { mergeHrefWithSearchParams } from '@/lib/url-params';
 import { type Template, useTemplates } from '@/providers/templates-provider';
 
 function Templates() {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
     const { deleteTemplate, error, isLoading, refetch, templates, updateTemplate } = useTemplates();
@@ -89,14 +91,14 @@ function Templates() {
 
         try {
             await updateTemplate(editingTemplateId, { text: template.text, title: newTitle });
-            toast.success('Template renamed successfully');
+            toast.success(t('templates:list.renamed'));
             setEditingTemplateId(null);
         } catch {
             // Error already handled in provider with toast
         } finally {
             setIsRenameLoading(false);
         }
-    }, [editingTemplateId, templates, updateTemplate]);
+    }, [editingTemplateId, templates, updateTemplate, t]);
 
     const handleDelete = async () => {
         if (!deletingTemplate) {
@@ -138,7 +140,7 @@ function Templates() {
                                 inputRef={editingInputRef}
                                 onCancel={handleTemplateRenameCancel}
                                 onSave={handleTemplateRenameSave}
-                                placeholder="Template title"
+                                placeholder={t('templates:list.renamePlaceholder')}
                             />
                         </div>
                     );
@@ -149,7 +151,7 @@ function Templates() {
             header: ({ column }) => (
                 <DataTableColumnHeader
                     column={column}
-                    title="Title"
+                    title={t('templates:list.colTitle')}
                 />
             ),
             meta: { searchable: true },
@@ -164,7 +166,7 @@ function Templates() {
             header: ({ column }) => (
                 <DataTableColumnHeader
                     column={column}
-                    title="Text"
+                    title={t('templates:list.colText')}
                 />
             ),
             meta: { searchable: true },
@@ -178,7 +180,7 @@ function Templates() {
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button
-                                    aria-label="Open menu"
+                                    aria-label={t('templates:list.openMenuAria')}
                                     className="size-8 p-0"
                                     onClick={(e) => e.stopPropagation()}
                                     variant="ghost"
@@ -193,11 +195,11 @@ function Templates() {
                             >
                                 <DropdownMenuItem onClick={() => handleTemplateOpen(template.id)}>
                                     <Pencil />
-                                    Edit
+                                    {t('common:action.edit')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleTemplateRenameStart(template)}>
                                     <Pencil className="size-3" />
-                                    Rename
+                                    {t('templates:list.rename')}
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
@@ -207,12 +209,12 @@ function Templates() {
                                     {deletingIds.has(template.id) ? (
                                         <>
                                             <Spinner variant="circle" />
-                                            Deleting...
+                                            {t('templates:list.deleting')}
                                         </>
                                     ) : (
                                         <>
                                             <Trash />
-                                            Delete
+                                            {t('common:action.delete')}
                                         </>
                                     )}
                                 </DropdownMenuItem>
@@ -233,11 +235,11 @@ function Templates() {
         <>
             <ContextMenuItem onClick={() => handleTemplateOpen(template.id)}>
                 <Pencil />
-                Edit
+                {t('common:action.edit')}
             </ContextMenuItem>
             <ContextMenuItem onClick={() => handleTemplateRenameStart(template)}>
                 <PencilLine />
-                Rename
+                {t('templates:list.rename')}
             </ContextMenuItem>
             <ContextMenuSeparator />
             <ContextMenuItem
@@ -245,7 +247,7 @@ function Templates() {
                 onClick={() => handleDeleteDialogOpen(template)}
             >
                 <Trash />
-                {deletingIds.has(template.id) ? 'Deleting...' : 'Delete'}
+                {deletingIds.has(template.id) ? t('templates:list.deleting') : t('common:action.delete')}
             </ContextMenuItem>
         </>
     );
@@ -253,12 +255,14 @@ function Templates() {
     const pageHeader = (
         <AppHeader>
             <AppHeaderContent>
-                <AppHeaderTitle icon={<FileText className="size-4 shrink-0" />}>Templates</AppHeaderTitle>
+                <AppHeaderTitle icon={<FileText className="size-4 shrink-0" />}>
+                    {t('templates:list.title')}
+                </AppHeaderTitle>
             </AppHeaderContent>
             <AppHeaderActions>
                 <AppHeaderAction
                     icon={<Plus />}
-                    label="New Template"
+                    label={t('templates:list.newTemplate')}
                     onClick={() => navigate(routes.newTemplate)}
                     variant="secondary"
                 />
@@ -272,8 +276,8 @@ function Templates() {
                 {pageHeader}
                 <div className="flex flex-1 flex-col gap-4 p-4">
                     <LoadingState
-                        description="Please wait while we fetch your flow templates"
-                        title="Loading templates..."
+                        description={t('templates:list.loadingDescription')}
+                        title={t('templates:list.loadingTitle')}
                     />
                 </div>
             </>
@@ -289,7 +293,7 @@ function Templates() {
                     <ErrorState
                         message={error.message}
                         onRetry={refetch}
-                        title="Error loading templates"
+                        title={t('templates:list.loadError')}
                     />
                 </div>
             </>
@@ -306,8 +310,8 @@ function Templates() {
                             <EmptyMedia variant="icon">
                                 <FileText />
                             </EmptyMedia>
-                            <EmptyTitle>No templates yet</EmptyTitle>
-                            <EmptyDescription>Create your first template to get started</EmptyDescription>
+                            <EmptyTitle>{t('templates:list.emptyTitle')}</EmptyTitle>
+                            <EmptyDescription>{t('templates:list.emptyDescription')}</EmptyDescription>
                         </EmptyHeader>
                         <EmptyContent>
                             <Button
@@ -315,7 +319,7 @@ function Templates() {
                                 variant="secondary"
                             >
                                 <Plus />
-                                New Template
+                                {t('templates:list.newTemplate')}
                             </Button>
                         </EmptyContent>
                     </Empty>
@@ -331,8 +335,8 @@ function Templates() {
                 <DataTable
                     columns={columns}
                     data={templates}
-                    empty={{ entityName: 'templates' }}
-                    filterPlaceholder="Filter templates..."
+                    empty={{ entityName: t('templates:list.emptyEntityName') }}
+                    filterPlaceholder={t('templates:list.filterPlaceholder')}
                     filterValue={filter}
                     onFilterChange={setFilter}
                     onRowClick={(template) => {
@@ -344,13 +348,13 @@ function Templates() {
                 />
 
                 <ConfirmationDialog
-                    cancelText="Cancel"
-                    confirmText="Delete"
+                    cancelText={t('common:action.cancel')}
+                    confirmText={t('common:action.delete')}
                     handleConfirm={handleDelete}
                     handleOpenChange={setIsDeleteDialogOpen}
                     isOpen={isDeleteDialogOpen}
                     itemName={deletingTemplate?.title}
-                    itemType="template"
+                    itemType={t('templates:list.itemType')}
                 />
             </div>
         </>

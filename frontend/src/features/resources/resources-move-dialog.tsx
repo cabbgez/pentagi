@@ -1,5 +1,6 @@
 import { FolderInput } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { FileNode } from '@/components/shared/file-manager';
 import type { OverwriteConflict } from '@/components/shared/overwrite';
@@ -123,6 +124,7 @@ export function ResourcesMoveDialog({ files, onClose }: ResourcesMoveDialogProps
 }
 
 function ResourcesMoveDialogForm({ files, onClose }: ResourcesMoveDialogFormProps) {
+    const { t } = useTranslation();
     const { isMoving, move } = useResourcesMove();
     const { resources } = useResources();
     const isMulti = files.length > 1;
@@ -180,11 +182,13 @@ function ResourcesMoveDialogForm({ files, onClose }: ResourcesMoveDialogFormProp
     // errors instead of a silently-dead button). Mirrors FormSubmitButton's requireValid gate.
     const isSubmitDisabled = form.formState.isSubmitted && !form.formState.isValid;
     const titleText = isMulti
-        ? `Move ${files.length} items`
+        ? t('resources:moveItemsTitle', { count: files.length })
         : files[0].isDir
-          ? 'Move directory'
-          : 'Rename or move resource';
-    const overwriteCtaLabel = isMulti ? `Move ${files.length} with overwrite` : 'Move with overwrite';
+          ? t('resources:moveDirectoryTitle')
+          : t('resources:moveSingleTitle');
+    const overwriteCtaLabel = isMulti
+        ? t('resources:moveItemsWithOverwrite', { count: files.length })
+        : t('resources:moveWithOverwrite');
 
     return (
         <>
@@ -196,10 +200,11 @@ function ResourcesMoveDialogForm({ files, onClose }: ResourcesMoveDialogFormProp
                     </DialogTitle>
                     <DialogDescription>
                         {isMulti ? (
-                            <>Move every selected item into the destination directory.</>
+                            t('resources:moveDescription')
                         ) : (
                             <>
-                                Update the path of <code>{files[0].path}</code>.
+                                {t('resources:moveSingleDescriptionPrefix')} <code>{files[0].path}</code>
+                                {t('resources:moveSingleDescriptionSuffix')}
                             </>
                         )}
                     </DialogDescription>
@@ -216,7 +221,11 @@ function ResourcesMoveDialogForm({ files, onClose }: ResourcesMoveDialogFormProp
                             name="destination"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>{isMulti ? 'Destination directory' : 'New path'}</FormLabel>
+                                    <FormLabel>
+                                        {isMulti
+                                            ? t('resources:destinationDirectoryLabel')
+                                            : t('resources:newPathLabel')}
+                                    </FormLabel>
                                     <FormControl>
                                         <Input
                                             {...field}
@@ -224,20 +233,17 @@ function ResourcesMoveDialogForm({ files, onClose }: ResourcesMoveDialogFormProp
                                             autoFocus
                                             disabled={isMoving}
                                             placeholder={
-                                                isMulti ? 'Leave empty to move into the library root' : undefined
+                                                isMulti ? t('resources:moveDestinationPlaceholder') : undefined
                                             }
                                         />
                                     </FormControl>
                                     <FormDescription>
                                         {isMulti ? (
-                                            <>
-                                                Relative directory inside your library. Leave empty for the root. Each
-                                                item keeps its current filename.
-                                            </>
+                                            t('resources:destinationDirectoryDescription')
                                         ) : (
                                             <>
-                                                Relative path inside your library. End with <code>/</code> to drop the
-                                                entry into that directory.
+                                                {t('resources:relativePathEndWithSlashPrefix')} <code>/</code>
+                                                {t('resources:relativePathEndWithSlashSuffix')}
                                             </>
                                         )}
                                     </FormDescription>
@@ -253,7 +259,7 @@ function ResourcesMoveDialogForm({ files, onClose }: ResourcesMoveDialogFormProp
                                 type="button"
                                 variant="outline"
                             >
-                                Cancel
+                                {t('common:action.cancel')}
                             </Button>
                             <OverwriteButtons
                                 isDisabled={isSubmitDisabled}
@@ -263,7 +269,7 @@ function ResourcesMoveDialogForm({ files, onClose }: ResourcesMoveDialogFormProp
                                 }}
                                 overwriteLabel={overwriteCtaLabel}
                                 primaryIcon={FolderInput}
-                                primaryLabel="Move"
+                                primaryLabel={t('resources:move')}
                                 primaryType="submit"
                             />
                         </div>

@@ -1,4 +1,6 @@
+import { type TFunction } from 'i18next';
 import { useCallback, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { api, getApiErrorMessage, unwrapApiResponse } from '@/lib/axios';
@@ -28,17 +30,23 @@ interface UseFlowFilesUploadResult {
     uploadFiles: (selectedFiles: File[]) => Promise<void>;
 }
 
-const buildUploadSuccessMessage = (uploadedCount: number, firstFileName?: string) => {
+const buildUploadSuccessMessage = (uploadedCount: number, firstFileName: string | undefined, t: TFunction) => {
     if (uploadedCount === 1) {
         return {
-            description: `Available at ${UPLOADS_TARGET_DIRECTORY}/${firstFileName ?? ''}`,
-            title: 'File uploaded',
+            description: t('flows:files.fileUploadedDescription', {
+                name: firstFileName ?? '',
+                path: UPLOADS_TARGET_DIRECTORY,
+            }),
+            title: t('flows:files.fileUploaded'),
         };
     }
 
     return {
-        description: `${uploadedCount} files are now available under ${UPLOADS_TARGET_DIRECTORY}`,
-        title: `${uploadedCount} files uploaded`,
+        description: t('flows:files.filesUploadedDescription', {
+            count: uploadedCount,
+            path: UPLOADS_TARGET_DIRECTORY,
+        }),
+        title: t('flows:files.filesUploaded', { count: uploadedCount }),
     };
 };
 
@@ -56,6 +64,7 @@ const buildUploadSuccessMessage = (uploadedCount: number, firstFileName?: string
  * uploaded entries automatically.
  */
 export function useFlowFilesUpload({ flowId }: UseFlowFilesUploadParams): UseFlowFilesUploadResult {
+    const { t } = useTranslation();
     const inputRef = useRef<HTMLInputElement | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [fileInputKey, setFileInputKey] = useState(0);
@@ -77,7 +86,7 @@ export function useFlowFilesUpload({ flowId }: UseFlowFilesUploadParams): UseFlo
             });
 
             if (validationError) {
-                toast.error('Upload failed', { description: validationError });
+                toast.error(t('flows:files.uploadFailed'), { description: validationError });
 
                 return;
             }
@@ -97,18 +106,18 @@ export function useFlowFilesUpload({ flowId }: UseFlowFilesUploadParams): UseFlo
                 });
                 const data = unwrapApiResponse(response);
                 const uploadedCount = data.files?.length ?? selectedFiles.length;
-                const successMessage = buildUploadSuccessMessage(uploadedCount, data.files?.[0]?.name);
+                const successMessage = buildUploadSuccessMessage(uploadedCount, data.files?.[0]?.name, t);
 
                 toast.success(successMessage.title, { description: successMessage.description });
             } catch (error) {
-                const description = getApiErrorMessage(error, 'Failed to upload files');
+                const description = getApiErrorMessage(error, t('flows:files.failedToUploadFiles'));
 
-                toast.error('Upload failed', { description });
+                toast.error(t('flows:files.uploadFailed'), { description });
             } finally {
                 setIsUploading(false);
             }
         },
-        [flowId],
+        [flowId, t],
     );
 
     const handleFileSelection = useCallback(

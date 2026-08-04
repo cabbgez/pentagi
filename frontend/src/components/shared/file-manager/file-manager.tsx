@@ -8,6 +8,7 @@ import {
     useRef,
     useState,
 } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -131,6 +132,7 @@ export function FileManager({
     sorting: controlledSorting,
     sortStorageKey,
 }: FileManagerProps) {
+    const { t } = useTranslation();
     const effectiveBulkActions = bulkActions ?? EMPTY_BULK_ACTIONS;
     const hasBulkActions = effectiveBulkActions.length > 0;
     const isCheckboxVisible = enableSelection ?? hasBulkActions;
@@ -430,7 +432,7 @@ export function FileManager({
     // clicks outside any row, which is the entire point.
     const treeBody = (
         <div
-            aria-label="File tree"
+            aria-label={t('common:fileManager.fileTree')}
             aria-multiselectable={isCheckboxVisible || undefined}
             className={cn(
                 'flex flex-1 flex-col overflow-y-auto py-1 transition-colors',

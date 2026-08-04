@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import * as z from 'zod';
 
@@ -11,34 +12,46 @@ import { useAppForm } from '@/hooks/use-app-form';
 import { api, resolveApiErrorMessage } from '@/lib/axios';
 import { useUser } from '@/providers/user-provider';
 
-const emailChangeSchema = z.object({
-    currentPassword: z.string().min(1, { message: 'Current password is required' }),
-    newEmail: z
-        .string()
-        .trim()
-        .toLowerCase()
-        .min(1, { message: 'Email is required' })
-        .email({ message: 'Invalid email address' })
-        .max(50, { message: 'Email must not exceed 50 characters' }),
-});
-
-const ERROR_BY_CODE: Record<string, string> = {
-    'Users.ChangeEmailCurrentUser.EmailAlreadyExists': 'Email address is already in use',
-    'Users.ChangeEmailCurrentUser.InvalidCurrentPassword': 'Current password is incorrect',
-    'Users.ChangeEmailCurrentUser.InvalidEmail': 'New email does not meet requirements',
-    'Users.NotFound': 'User not found',
-};
-
 interface EmailChangeFormProps {
     onCancel?: () => void;
     onSuccess?: () => void;
 }
 
-type EmailChangeFormValues = z.infer<typeof emailChangeSchema>;
-
 export function EmailChangeForm({ onCancel, onSuccess }: EmailChangeFormProps) {
+    const { i18n, t } = useTranslation();
     const [error, setError] = useState<null | string>(null);
     const { patchUser, refreshAuthInfo } = useUser();
+
+    // Rebuilt when the language changes so zod messages follow the locale.
+    const emailChangeSchema = useMemo(
+        () =>
+            z.object({
+                currentPassword: z.string().min(1, {
+                    message: i18n.t('auth:validation.currentPasswordRequired'),
+                }),
+                newEmail: z
+                    .string()
+                    .trim()
+                    .toLowerCase()
+                    .min(1, { message: i18n.t('auth:validation.emailRequired') })
+                    .email({ message: i18n.t('auth:validation.invalidEmail') })
+                    .max(50, { message: i18n.t('auth:validation.emailMaxLength') }),
+            }),
+        // i18n.language is the reactive signal — the i18n instance itself is
+        // stable. Only the mutable language property belongs in the deps.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [i18n.language],
+    );
+
+    type EmailChangeFormValues = z.infer<typeof emailChangeSchema>;
+
+    // Built per-render so the friendly copy follows the active language.
+    const ERROR_BY_CODE: Record<string, string> = {
+        'Users.ChangeEmailCurrentUser.EmailAlreadyExists': t('auth:errors.emailAlreadyExists'),
+        'Users.ChangeEmailCurrentUser.InvalidCurrentPassword': t('auth:errors.currentPasswordIncorrect'),
+        'Users.ChangeEmailCurrentUser.InvalidEmail': t('auth:errors.newEmailInvalid'),
+        'Users.NotFound': t('auth:errors.userNotFound'),
+    };
 
     const form = useAppForm<EmailChangeFormValues>({
         defaultValues: {
@@ -58,14 +71,14 @@ export function EmailChangeForm({ onCancel, onSuccess }: EmailChangeFormProps) {
             });
 
             form.reset();
-            toast.success('Email successfully updated');
+            toast.success(t('auth:emailChange.success'));
 
             patchUser({ mail: values.newEmail });
             await refreshAuthInfo();
 
             onSuccess?.();
         } catch (err: unknown) {
-            setError(resolveApiErrorMessage(err, ERROR_BY_CODE, 'Failed to update email'));
+            setError(resolveApiErrorMessage(err, ERROR_BY_CODE, t('auth:emailChange.failed')));
         }
     };
 
@@ -83,11 +96,11 @@ export function EmailChangeForm({ onCancel, onSuccess }: EmailChangeFormProps) {
                     name="currentPassword"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Current Password</FormLabel>
+                            <FormLabel>{t('auth:emailChange.currentPasswordLabel')}</FormLabel>
                             <FormControl>
                                 <InputPassword
                                     {...field}
-                                    placeholder="Enter your current password"
+                                    placeholder={t('auth:emailChange.currentPasswordPlaceholder')}
                                 />
                             </FormControl>
                             <FormMessage />
@@ -100,11 +113,11 @@ export function EmailChangeForm({ onCancel, onSuccess }: EmailChangeFormProps) {
                     name="newEmail"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>New Email</FormLabel>
+                            <FormLabel>{t('auth:emailChange.newEmailLabel')}</FormLabel>
                             <FormControl>
                                 <Input
                                     {...field}
-                                    placeholder="Enter your new email address"
+                                    placeholder={t('auth:emailChange.newEmailPlaceholder')}
                                     type="email"
                                 />
                             </FormControl>
@@ -123,11 +136,11 @@ export function EmailChangeForm({ onCancel, onSuccess }: EmailChangeFormProps) {
                             type="button"
                             variant="outline"
                         >
-                            Cancel
+                            {t('common:action.cancel')}
                         </Button>
                     )}
                     <FormSubmitButton size="sm">
-                        <span>Update Email</span>
+                        <span>{t('auth:emailChange.submit')}</span>
                     </FormSubmitButton>
                 </div>
             </form>

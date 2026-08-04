@@ -1,4 +1,5 @@
 import { SquareMenu, Type } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -13,6 +14,8 @@ interface EditorViewModeToggleProps {
 }
 
 export function EditorViewModeToggle({ className, mode, onModeChange, rawTooltip }: EditorViewModeToggleProps) {
+    const { t } = useTranslation();
+
     return (
         <Tabs
             className={className}
@@ -21,14 +24,14 @@ export function EditorViewModeToggle({ className, mode, onModeChange, rawTooltip
         >
             <TabsList className="dark:bg-background h-7 p-0.5">
                 <TabsTrigger
-                    aria-label="Rich editor"
+                    aria-label={t('common:markdownEditor.richEditor')}
                     className="dark:data-[state=active]:bg-card h-6 px-2"
                     value="rich"
                 >
                     <SquareMenu className="size-4" />
                 </TabsTrigger>
                 <TabsTrigger
-                    aria-label="Raw source"
+                    aria-label={t('common:markdownEditor.rawSource')}
                     className="dark:data-[state=active]:bg-card h-6 px-2"
                     title={rawTooltip}
                     value="raw"

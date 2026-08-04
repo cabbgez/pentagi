@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 
 import type { UserResourceFragmentFragment } from '@/graphql/types';
 
+import i18n from '@/i18n';
 import { api, getApiErrorMessage, unwrapApiResponse } from '@/lib/axios';
 import { validateUploadBatch } from '@/lib/upload-validation';
 
@@ -13,7 +14,6 @@ import {
     RESOURCES_API_PATH,
 } from './resources-constants';
 import { restResourceEntryToFragment, type RestResourceList } from './resources-rest';
-import { pluralizeItems } from './resources-utils';
 
 interface UploadOptions {
     /** Virtual directory path inside the user's library. Empty/undefined uploads to root. */
@@ -62,18 +62,21 @@ interface UseResourcesUploadResult {
     uploadFiles: (selectedFiles: File[], options?: UploadOptions) => Promise<null | UploadResponse>;
 }
 
-const UPLOAD_OVERWRITE_HINT = 'Resource already exists — please rename or remove the existing entry';
-
 const buildUploadSuccessMessage = (uploadedCount: number, dir?: string) => {
-    const target = dir ? `to /${dir}` : 'to your library';
-
     if (uploadedCount === 1) {
-        return { description: `Uploaded ${target}`, title: 'File uploaded' };
+        return {
+            description: dir
+                ? i18n.t('resources:uploadedTo', { path: `/${dir}` })
+                : i18n.t('resources:uploadedToLibrary'),
+            title: i18n.t('resources:uploaded'),
+        };
     }
 
     return {
-        description: `${uploadedCount} files uploaded ${target}`,
-        title: `${uploadedCount} ${pluralizeItems(uploadedCount)} uploaded`,
+        description: dir
+            ? i18n.t('resources:uploadedNInto', { count: uploadedCount, path: `/${dir}` })
+            : i18n.t('resources:uploadedNIntoLibrary', { count: uploadedCount }),
+        title: i18n.t('resources:uploadedN', { count: uploadedCount }),
     };
 };
 
@@ -128,7 +131,7 @@ export function useResourcesUpload({ defaultDir, onSuccess }: UseResourcesUpload
             });
 
             if (validationError) {
-                toast.error('Upload failed', { description: validationError });
+                toast.error(i18n.t('resources:uploadFailed'), { description: validationError });
 
                 return null;
             }
@@ -169,11 +172,11 @@ export function useResourcesUpload({ defaultDir, onSuccess }: UseResourcesUpload
 
                 return data;
             } catch (error) {
-                const description = getApiErrorMessage(error, 'Failed to upload files', {
-                    409: UPLOAD_OVERWRITE_HINT,
+                const description = getApiErrorMessage(error, i18n.t('resources:uploadFilesFailed'), {
+                    409: i18n.t('resources:uploadOverwriteHint'),
                 });
 
-                toast.error('Upload failed', { description });
+                toast.error(i18n.t('resources:uploadFailed'), { description });
 
                 return null;
             } finally {

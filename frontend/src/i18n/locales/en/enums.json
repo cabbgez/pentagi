@@ -1,0 +1,55 @@
+{
+    "provider": {
+        "anthropic": "Anthropic",
+        "bedrock": "Bedrock",
+        "custom": "Custom",
+        "deepseek": "DeepSeek",
+        "gemini": "Gemini",
+        "glm": "GLM",
+        "kimi": "Kimi",
+        "minimax": "MiniMax",
+        "ollama": "Ollama",
+        "openai": "OpenAI",
+        "qwen": "Qwen"
+    },
+    "oauth": {
+        "github": "GitHub",
+        "google": "Google"
+    },
+    "status": {
+        "created": "Created",
+        "running": "Running",
+        "waiting": "Waiting",
+        "finished": "Finished",
+        "failed": "Failed"
+    },
+    "reasoningEffort": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "max": "Max",
+        "extraHigh": "Extra High"
+    },
+    "agentType": {
+        "adviser": "Adviser",
+        "assistant": "Assistant",
+        "coder": "Coder",
+        "enricher": "Enricher",
+        "generator": "Generator",
+        "installer": "Installer",
+        "pentester": "Pentester",
+        "primaryAgent": "Primary Agent",
+        "refiner": "Refiner",
+        "reflector": "Reflector",
+        "searcher": "Searcher",
+        "simple": "Simple",
+        "simpleJson": "Simple JSON"
+    },
+    "modelRole": {
+        "primaryAgent": "Primary Agent",
+        "simple": "Simple",
+        "simpleJson": "Simple JSON",
+        "assistant": "Assistant",
+        "generator": "Generator"
+    }
+}

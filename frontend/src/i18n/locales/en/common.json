@@ -1,0 +1,216 @@
+{
+    "app": {
+        "name": "PentAGI"
+    },
+    "action": {
+        "save": "Save",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "reset": "Reset",
+        "create": "Create",
+        "edit": "Edit",
+        "close": "Close",
+        "confirm": "Confirm",
+        "apply": "Apply",
+        "retry": "Retry",
+        "refresh": "Refresh",
+        "copy": "Copy",
+        "copyToClipboard": "Copy to clipboard",
+        "download": "Download",
+        "upload": "Upload",
+        "search": "Search",
+        "filter": "Filter",
+        "clear": "Clear",
+        "yes": "Yes",
+        "no": "No",
+        "back": "Back",
+        "next": "Next",
+        "previous": "Previous",
+        "expand": "Expand",
+        "collapse": "Collapse",
+        "viewAll": "View all",
+        "viewDetails": "View details",
+        "loading": "Loading…",
+        "noData": "No data"
+    },
+    "markdownEditor": {
+        "formatting": "Formatting",
+        "bold": "Bold",
+        "italic": "Italic",
+        "strikethrough": "Strikethrough",
+        "inlineCode": "Inline code",
+        "blockquote": "Blockquote",
+        "codeBlock": "Code block",
+        "horizontalRule": "Horizontal rule",
+        "clearFormatting": "Clear formatting",
+        "undo": "Undo",
+        "redo": "Redo",
+        "textStyle": "Text style",
+        "link": "Link",
+        "linkUrl": "Link URL",
+        "applyLink": "Apply link",
+        "openLinkInNewTab": "Open link in new tab",
+        "removeLink": "Remove link",
+        "insertImage": "Insert image",
+        "applyImage": "Apply image",
+        "imageUrl": "Image URL",
+        "describeImage": "Describe the image",
+        "removeImage": "Remove image",
+        "altTextOptional": "Alt text (optional)",
+        "lists": "Lists",
+        "table": "Table",
+        "headerRow": "Header row",
+        "columnActions": "Column actions",
+        "rowActions": "Row actions",
+        "richEditor": "Rich editor",
+        "rawSource": "Raw source"
+    },
+    "empty": {
+        "title": "Nothing here yet",
+        "description": "There is nothing to show here"
+    },
+    "confirm": {
+        "title": "Confirm action",
+        "delete": {
+            "title": "Confirm deletion",
+            "message": "This action cannot be undone. Are you sure you want to delete?"
+        }
+    },
+    "confirmDialog": {
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "itemName": "this",
+        "itemType": "item",
+        "confirmAction": "Confirm Action",
+        "performAction": "perform this action on",
+        "defaultDescription": "Are you sure you want to {{verb}} <strong>{{itemName}}</strong> {{itemType}}?"
+    },
+    "overwrite": {
+        "replace": "Replace",
+        "replaceAll": "Replace all",
+        "title": "Replace existing item?",
+        "descriptionSingle": "An item named \"{{name}}\" already exists at /{{path}}. Do you want to replace it?",
+        "descriptionMulti": "{{count}} items already exist at the destination. Do you want to replace all of them?"
+    },
+    "unsavedChanges": {
+        "description": "You have unsaved changes on this page. Would you like to save them before leaving?",
+        "discard": "Discard",
+        "save": "Save",
+        "title": "Unsaved changes"
+    },
+    "dataTable": {
+        "noResults": "No results.",
+        "noResultsShort": "No results",
+        "all": "All",
+        "searchIn": "Search in",
+        "columns": "Columns",
+        "rowsPerPage": "Rows per page",
+        "firstPage": "First page",
+        "previousPage": "Previous page",
+        "nextPage": "Next page",
+        "lastPage": "Last page",
+        "clearSearch": "Clear search",
+        "noMatches": "No matches",
+        "emptyYet": "No {{entityName}} yet",
+        "noMatchesQuery": "No {{entityName}} match \"{{query}}\". Try a different query.",
+        "showingOf": "Showing {{rangeStart}}–{{rangeEnd}} of {{totalRows}}",
+        "noEntity": "No {{entityName}}"
+    },
+    "errorBoundary": {
+        "title": "Something went wrong",
+        "chunk": "A new version was likely just deployed. Reloading will load the latest one.",
+        "desync": "The page hit a display glitch. Reloading usually clears it.",
+        "generic": "The page ran into an unexpected error. Reloading usually clears it.",
+        "reload": "Reload"
+    },
+    "detailNav": {
+        "previous": "Previous",
+        "next": "Next",
+        "showAllMatching": "Show all matching {{title}}",
+        "clearSearch": "Clear search"
+    },
+    "fileManager": {
+        "fileTree": "File tree",
+        "rowActions": "Row actions"
+    },
+    "sidebar": {
+        "toggleSidebar": "Toggle Sidebar"
+    },
+    "breadcrumb": {
+        "ariaLabel": "breadcrumb",
+        "more": "More"
+    },
+    "autocomplete": {
+        "suggestions": "Suggestions"
+    },
+    "sort": {
+        "ascending": "ascending",
+        "descending": "descending",
+        "sortBy": "Sort by {{field}}",
+        "clearSorting": "Clear sorting on {{field}}"
+    },
+    "status": {
+        "created": "Created",
+        "running": "Running",
+        "waiting": "Waiting",
+        "finished": "Finished",
+        "failed": "Failed"
+    },
+    "language": {
+        "label": "Language",
+        "zh-CN": "中文",
+        "en": "English"
+    },
+    "theme": {
+        "label": "Theme",
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System"
+    },
+    "nav": {
+        "dashboard": "Dashboard",
+        "flows": "Flows",
+        "templates": "Templates",
+        "knowledges": "Knowledges",
+        "resources": "Resources",
+        "settings": "Settings",
+        "newFlow": "New flow",
+        "recentFlows": "Recent Flows",
+        "favoriteFlows": "Favorite Flows",
+        "profile": "Profile"
+    },
+    "user": {
+        "profile": "Profile",
+        "logout": "Log out",
+        "account": "Account",
+        "local": "local",
+        "oauth": "oauth"
+    },
+    "toast": {
+        "copied": "Copied to clipboard",
+        "copyFailed": "Failed to copy to clipboard"
+    },
+    "titles": {
+        "account": "Account",
+        "apiTokens": "API Tokens",
+        "dashboard": "Dashboard",
+        "flows": "Flows",
+        "flow": "Flow",
+        "flowReport": "Flow report",
+        "knowledges": "Knowledges",
+        "knowledge": "Knowledge",
+        "login": "Login",
+        "newFlow": "New flow",
+        "oauth": "OAuth",
+        "prompts": "Prompts",
+        "prompt": "Prompt",
+        "providers": "Providers",
+        "provider": "Provider",
+        "resources": "Resources",
+        "templates": "Templates",
+        "template": "Template",
+        "newProvider": "New provider",
+        "newKnowledge": "New knowledge",
+        "newTemplate": "New template"
+    }
+}
