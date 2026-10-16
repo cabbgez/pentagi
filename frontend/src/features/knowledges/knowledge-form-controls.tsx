@@ -197,7 +197,9 @@ export function KnowledgeMetaFields({ control, isNew, isSaving }: KnowledgeMetaF
                                 >
                                     <FormControl>
                                         <SelectTrigger>
-                                            <SelectValue placeholder={t('knowledges:form.selectGuideTypePlaceholder')} />
+                                            <SelectValue
+                                                placeholder={t('knowledges:form.selectGuideTypePlaceholder')}
+                                            />
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
@@ -231,7 +233,9 @@ export function KnowledgeMetaFields({ control, isNew, isSaving }: KnowledgeMetaF
                                 >
                                     <FormControl>
                                         <SelectTrigger>
-                                            <SelectValue placeholder={t('knowledges:form.selectAnswerTypePlaceholder')} />
+                                            <SelectValue
+                                                placeholder={t('knowledges:form.selectAnswerTypePlaceholder')}
+                                            />
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>

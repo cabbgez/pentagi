@@ -38,7 +38,7 @@ describe('FlowDashboardOverview', () => {
 
         expect(placeholders()).toBe(0);
         expect(screen.getByText('42')).toBeInTheDocument();
-        expect(screen.getByText('pentester')).toBeInTheDocument();
+        expect(screen.getByText('Pentester')).toBeInTheDocument();
     });
 
     it('keeps them on screen when a refetch fails', () => {

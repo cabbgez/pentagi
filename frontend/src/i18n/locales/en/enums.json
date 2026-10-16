@@ -28,6 +28,7 @@
         "medium": "Medium",
         "high": "High",
         "max": "Max",
+        "minimal": "Minimal",
         "extraHigh": "Extra High"
     },
     "agentType": {

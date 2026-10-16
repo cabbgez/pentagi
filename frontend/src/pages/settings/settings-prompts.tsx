@@ -860,9 +860,7 @@ function SettingsPrompts() {
                             <h2 className="text-lg font-semibold">{t('settings:prompts.agentPromptsTitle')}</h2>
                             <Badge variant="secondary">{agentPrompts.length}</Badge>
                         </div>
-                        <p className="text-muted-foreground text-sm">
-                            {t('settings:prompts.agentPromptsDescription')}
-                        </p>
+                        <p className="text-muted-foreground text-sm">{t('settings:prompts.agentPromptsDescription')}</p>
                         <DataTable<AgentPromptTableData>
                             columns={agentColumns}
                             data={agentPrompts}
@@ -884,9 +882,7 @@ function SettingsPrompts() {
                             <h2 className="text-lg font-semibold">{t('settings:prompts.toolPromptsTitle')}</h2>
                             <Badge variant="secondary">{toolPrompts.length}</Badge>
                         </div>
-                        <p className="text-muted-foreground text-sm">
-                            {t('settings:prompts.toolPromptsDescription')}
-                        </p>
+                        <p className="text-muted-foreground text-sm">{t('settings:prompts.toolPromptsDescription')}</p>
                         <DataTable<ToolPromptTableData>
                             columns={toolColumns}
                             data={toolPrompts}

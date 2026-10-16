@@ -28,6 +28,7 @@
         "medium": "中",
         "high": "高",
         "max": "最高",
+        "minimal": "最小",
         "extraHigh": "极高"
     },
     "agentType": {

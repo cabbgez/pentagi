@@ -207,8 +207,7 @@ export function FlowsProvider({ children }: FlowsProviderProps) {
 
                 return true;
             } catch (error) {
-                const errorMessage =
-                    error instanceof Error ? error.message : i18n.t('flows:provider.finishFlowError');
+                const errorMessage = error instanceof Error ? error.message : i18n.t('flows:provider.finishFlowError');
                 toast.error(errorMessage, {
                     description: flowDescription,
                     id: loadingToastId,

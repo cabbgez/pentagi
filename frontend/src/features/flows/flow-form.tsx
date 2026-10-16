@@ -51,8 +51,14 @@ import { useResources } from '@/providers/resources-provider';
 import { type Template, useTemplates } from '@/providers/templates-provider';
 
 const formSchema = z.object({
-    message: z.string().trim().min(1, { message: i18n.t('flows:form.messageRequired') }),
-    providerName: z.string().trim().min(1, { message: i18n.t('flows:form.providerRequired') }),
+    message: z
+        .string()
+        .trim()
+        .min(1, { message: i18n.t('flows:form.messageRequired') }),
+    providerName: z
+        .string()
+        .trim()
+        .min(1, { message: i18n.t('flows:form.providerRequired') }),
     resourceIds: z.array(z.string()),
     useAgents: z.boolean(),
 });
@@ -677,7 +683,9 @@ export function FlowForm({
                                                             </FormItem>
                                                         </TooltipTrigger>
                                                         <TooltipContent>
-                                                            <p className="max-w-48">{t('flows:form.useAgentsTooltip')}</p>
+                                                            <p className="max-w-48">
+                                                                {t('flows:form.useAgentsTooltip')}
+                                                            </p>
                                                         </TooltipContent>
                                                     </Tooltip>
                                                 </TooltipProvider>

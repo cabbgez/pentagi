@@ -184,7 +184,9 @@ function FlowFilesPromoteDialogForm({ files, flowId, onClose }: FlowFilesPromote
     // Convention: stay enabled until the first submit, then reflect validity (so an invalid submit surfaces
     // errors instead of a silently-dead button). Mirrors FormSubmitButton's requireValid gate.
     const isSubmitDisabled = form.formState.isSubmitted && !form.formState.isValid;
-    const titleText = isMulti ? t('flows:files.saveItemsAsResources', { count: files.length }) : t('flows:files.saveAsResource');
+    const titleText = isMulti
+        ? t('flows:files.saveItemsAsResources', { count: files.length })
+        : t('flows:files.saveAsResource');
     const overwriteCtaLabel = isMulti
         ? t('flows:files.saveItemsWithOverwrite', { count: files.length })
         : t('flows:files.saveWithOverwrite');
@@ -220,7 +222,11 @@ function FlowFilesPromoteDialogForm({ files, flowId, onClose }: FlowFilesPromote
                             name="destination"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>{isMulti ? t('flows:files.destinationDirectory') : t('flows:files.destinationPath')}</FormLabel>
+                                    <FormLabel>
+                                        {isMulti
+                                            ? t('flows:files.destinationDirectory')
+                                            : t('flows:files.destinationPath')}
+                                    </FormLabel>
                                     <FormControl>
                                         <Input
                                             {...field}

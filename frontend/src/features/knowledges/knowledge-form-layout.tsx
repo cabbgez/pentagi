@@ -108,9 +108,7 @@ function KnowledgeIntroBlock({ isNew, knowledge }: KnowledgeIntroBlockProps) {
                         <Badge variant="outline">{t('knowledges:list.taskRef', { id: knowledge.taskId })}</Badge>
                     ) : null}
                     {knowledge.subtaskId ? (
-                        <Badge variant="outline">
-                            {t('knowledges:list.subtaskRef', { id: knowledge.subtaskId })}
-                        </Badge>
+                        <Badge variant="outline">{t('knowledges:list.subtaskRef', { id: knowledge.subtaskId })}</Badge>
                     ) : null}
                     <span>·</span>
                     <span>

@@ -211,11 +211,9 @@ function ResourcesCopyDialogForm({ files, onClose }: ResourcesCopyDialogFormProp
                                         />
                                     </FormControl>
                                     <FormDescription>
-                                        {isMulti ? (
-                                            t('resources:destinationDirectoryDescription')
-                                        ) : (
-                                            t('resources:relativePathDescription')
-                                        )}
+                                        {isMulti
+                                            ? t('resources:destinationDirectoryDescription')
+                                            : t('resources:relativePathDescription')}
                                     </FormDescription>
                                     <FormMessage />
                                 </FormItem>

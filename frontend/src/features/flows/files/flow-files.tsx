@@ -16,7 +16,6 @@ import {
     type FileManagerAction,
     type FileManagerBulkAction,
     type FileNode,
-    pluralizeItems,
 } from '@/components/shared/file-manager';
 import { Button } from '@/components/ui/button';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
@@ -64,37 +63,43 @@ function FlowFiles() {
     const isContainerRunning = flowStatus === StatusType.Running || flowStatus === StatusType.Waiting;
     const isPullDisabled = !isContainerRunning || isLoading || upload.isUploading;
 
-    const handleCopyPath = useCallback(async (file: FileNode) => {
-        const wasCopied = await copyToClipboard(file.path);
+    const handleCopyPath = useCallback(
+        async (file: FileNode) => {
+            const wasCopied = await copyToClipboard(file.path);
 
-        if (wasCopied) {
-            toast.success(t('flows:files.pathCopied'));
+            if (wasCopied) {
+                toast.success(t('flows:files.pathCopied'));
 
-            return;
-        }
+                return;
+            }
 
-        toast.error(t('flows:files.copyPathFailed'));
-    }, [t]);
+            toast.error(t('flows:files.copyPathFailed'));
+        },
+        [t],
+    );
 
     /**
      * Join the selected paths with `\n` so the result pastes as a clean
      * newline-separated list into the agent chat, a shell command, or a tool argument.
      */
-    const handleBulkCopyPaths = useCallback(async (paths: string[]) => {
-        if (paths.length === 0) {
-            return;
-        }
+    const handleBulkCopyPaths = useCallback(
+        async (paths: string[]) => {
+            if (paths.length === 0) {
+                return;
+            }
 
-        const wasCopied = await copyToClipboard(paths.join('\n'));
+            const wasCopied = await copyToClipboard(paths.join('\n'));
 
-        if (wasCopied) {
-            toast.success(t('flows:files.pathsCopied', { count: paths.length }));
+            if (wasCopied) {
+                toast.success(t('flows:files.pathsCopied', { count: paths.length }));
 
-            return;
-        }
+                return;
+            }
 
-        toast.error(t('flows:files.copyPathsFailed'));
-    }, [t]);
+            toast.error(t('flows:files.copyPathsFailed'));
+        },
+        [t],
+    );
 
     // `flowId` may be missing (no flow selected yet) — return '' so FileManager
     // renders a noop link instead of crashing on `null`.
@@ -295,7 +300,8 @@ function FlowFiles() {
                             <TooltipContent className="max-w-64 text-center text-xs">
                                 <p className="font-medium">{t('flows:files.attachResources')}</p>
                                 <p className="mt-1">
-                                    {t('flows:files.attachResourcesTooltipDescriptionPrefix')} <code>/work/resources</code>
+                                    {t('flows:files.attachResourcesTooltipDescriptionPrefix')}{' '}
+                                    <code>/work/resources</code>
                                     {t('flows:files.attachResourcesTooltipDescriptionSuffix')}
                                 </p>
                             </TooltipContent>
@@ -374,7 +380,11 @@ function FlowFiles() {
                 isOpen={!!deletion.fileToDelete}
                 itemName={deletion.fileToDelete?.name}
                 itemType={deletion.fileToDelete?.isDir ? t('flows:files.directory') : t('flows:files.file')}
-                title={deletion.fileToDelete?.isDir ? t('flows:files.deleteDirectoryTitle') : t('flows:files.deleteFileTitle')}
+                title={
+                    deletion.fileToDelete?.isDir
+                        ? t('flows:files.deleteDirectoryTitle')
+                        : t('flows:files.deleteFileTitle')
+                }
             />
         </div>
     );

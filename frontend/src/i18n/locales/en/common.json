@@ -183,8 +183,8 @@
         "profile": "Profile",
         "logout": "Log out",
         "account": "Account",
-        "local": "local",
-        "oauth": "oauth"
+        "local": "Local",
+        "oauth": "OAuth"
     },
     "toast": {
         "copied": "Copied to clipboard",

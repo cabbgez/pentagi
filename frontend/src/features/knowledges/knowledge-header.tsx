@@ -189,7 +189,9 @@ export function KnowledgeHeader({
                                     </Tooltip>
                                 ) : (
                                     <BreadcrumbPage className="min-w-0 truncate">
-                                        {isNew ? t('knowledges:header.newKnowledge') : (knowledgeName ?? t('knowledges:header.title'))}
+                                        {isNew
+                                            ? t('knowledges:header.newKnowledge')
+                                            : (knowledgeName ?? t('knowledges:header.title'))}
                                     </BreadcrumbPage>
                                 )}
                             </BreadcrumbItem>

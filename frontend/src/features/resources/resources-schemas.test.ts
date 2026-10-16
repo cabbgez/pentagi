@@ -9,7 +9,9 @@ import { resourcesMoveFormSchema } from './use-resources-move';
 
 describe('buildPathsQuery', () => {
     it('serialises multiple paths into repeated paths[] params', () => {
-        expect(buildPathsQuery(['a.txt', 'reports/2025/b.txt'])).toBe('paths%5B%5D=a.txt&paths%5B%5D=reports%2F2025%2Fb.txt');
+        expect(buildPathsQuery(['a.txt', 'reports/2025/b.txt'])).toBe(
+            'paths%5B%5D=a.txt&paths%5B%5D=reports%2F2025%2Fb.txt',
+        );
     });
 
     it('returns an empty query string for an empty list', () => {

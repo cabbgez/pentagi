@@ -177,9 +177,12 @@ function FlowFilesAttachResourcesDialogBody({
     const selectedCount = selectedPaths.size;
     const hasResources = resources.length > 0;
     const isAttachDisabled = selectedCount === 0;
-    const primaryLabel = selectedCount > 0 ? t('flows:files.attachItems', { count: selectedCount }) : t('flows:files.attach');
+    const primaryLabel =
+        selectedCount > 0 ? t('flows:files.attachItems', { count: selectedCount }) : t('flows:files.attach');
     const overwriteLabel =
-        selectedCount > 0 ? t('flows:files.attachItemsWithOverwrite', { count: selectedCount }) : t('flows:files.attachWithOverwrite');
+        selectedCount > 0
+            ? t('flows:files.attachItemsWithOverwrite', { count: selectedCount })
+            : t('flows:files.attachWithOverwrite');
 
     const emptyState = (
         <Empty className="border-0">

@@ -58,7 +58,8 @@ function LoginForm({ providers, returnUrl = routes.newFlow }: LoginFormProps) {
                     })
                     .refine(
                         (value) =>
-                            z.string().email().safeParse(value).success || ['admin', 'demo'].includes(value.toLowerCase()),
+                            z.string().email().safeParse(value).success ||
+                            ['admin', 'demo'].includes(value.toLowerCase()),
                         {
                             message: i18n.t('auth:validation.invalidLogin'),
                         },

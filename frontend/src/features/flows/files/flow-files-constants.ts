@@ -11,9 +11,27 @@ export const RESOURCES_PATH_PREFIX = 'resources';
 export const CONTAINER_PATH_PREFIX = 'container';
 
 export const ROOT_GROUPS: FileManagerRootGroup[] = [
-    { defaultOpen: true, icon: FolderUp, id: 'uploads', label: i18n.t('flows:files.rootGroupUploads'), pathPrefix: UPLOADS_PATH_PREFIX },
-    { defaultOpen: true, icon: Folder, id: 'resources', label: i18n.t('flows:files.rootGroupResources'), pathPrefix: RESOURCES_PATH_PREFIX },
-    { defaultOpen: true, icon: HardDrive, id: 'container', label: i18n.t('flows:files.rootGroupContainer'), pathPrefix: CONTAINER_PATH_PREFIX },
+    {
+        defaultOpen: true,
+        icon: FolderUp,
+        id: 'uploads',
+        label: i18n.t('flows:files.rootGroupUploads'),
+        pathPrefix: UPLOADS_PATH_PREFIX,
+    },
+    {
+        defaultOpen: true,
+        icon: Folder,
+        id: 'resources',
+        label: i18n.t('flows:files.rootGroupResources'),
+        pathPrefix: RESOURCES_PATH_PREFIX,
+    },
+    {
+        defaultOpen: true,
+        icon: HardDrive,
+        id: 'container',
+        label: i18n.t('flows:files.rootGroupContainer'),
+        pathPrefix: CONTAINER_PATH_PREFIX,
+    },
 ];
 
 export const FLOW_FILES_API_PATH = (flowId: string) => `/flows/${flowId}/files/`;

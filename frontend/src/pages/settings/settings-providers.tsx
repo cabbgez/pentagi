@@ -406,14 +406,7 @@ function SettingsProviders() {
                 </ContextMenuItem>
             </>
         ),
-        [
-            deletingProvider,
-            handleProviderClone,
-            handleProviderDeleteDialogOpen,
-            handleProviderEdit,
-            isDeleteLoading,
-            t,
-        ],
+        [deletingProvider, handleProviderClone, handleProviderDeleteDialogOpen, handleProviderEdit, isDeleteLoading, t],
     );
 
     const pageHeader = (

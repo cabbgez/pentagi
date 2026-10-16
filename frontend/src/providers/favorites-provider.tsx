@@ -150,7 +150,8 @@ export function FavoritesProvider({ children }: FavoritesProviderProps) {
                         variables: { flowId: id },
                     });
                 } catch (error) {
-                    const errorMessage = error instanceof Error ? error.message : i18n.t('flows:provider.addFavoriteError');
+                    const errorMessage =
+                        error instanceof Error ? error.message : i18n.t('flows:provider.addFavoriteError');
                     toast.error(i18n.t('flows:provider.addFavoriteFailed'), {
                         description: errorMessage,
                     });

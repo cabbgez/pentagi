@@ -1,12 +1,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
-import {
-    type AppLanguage,
-    DEFAULT_LANGUAGE,
-    FALLBACK_LANGUAGE,
-    LANGUAGE_STORAGE_KEY,
-} from './config';
+import { type AppLanguage, DEFAULT_LANGUAGE, FALLBACK_LANGUAGE, LANGUAGE_STORAGE_KEY } from './config';
 // Static imports — the app is small enough that per-route lazy loading adds
 // complexity without a meaningful bundle-size win. New namespaces are added
 // here as they are introduced (auth, flows, settings, …).

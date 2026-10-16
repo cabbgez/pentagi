@@ -7,7 +7,6 @@ import {
     FileManager,
     type FileManagerBulkAction,
     type FileNode,
-    pluralizeItems,
 } from '@/components/shared/file-manager';
 import { OverwriteButtons, OverwriteDialog, useOverwrite } from '@/components/shared/overwrite';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -357,7 +356,9 @@ function FlowFilesPullDialogForm({ cachedFiles, flowId, onClose, onSuccess }: Fl
                         <span className="text-foreground font-medium">{failure.name}</span> — {failure.message}
                     </li>
                 ))}
-                {listingFailures.length > 5 && <li>{t('flows:files.andMore', { count: listingFailures.length - 5 })}</li>}
+                {listingFailures.length > 5 && (
+                    <li>{t('flows:files.andMore', { count: listingFailures.length - 5 })}</li>
+                )}
             </ul>
         </Empty>
     ) : (

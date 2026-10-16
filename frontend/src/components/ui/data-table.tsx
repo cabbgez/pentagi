@@ -212,9 +212,7 @@ function DataTableEmptyState({ entityName, filterValue }: DataTableEmptyStatePro
                     <Icon />
                 </EmptyMedia>
                 <EmptyTitle>
-                    {hasFilter
-                        ? t('common:dataTable.noMatches')
-                        : t('common:dataTable.emptyYet', { entityName })}
+                    {hasFilter ? t('common:dataTable.noMatches') : t('common:dataTable.emptyYet', { entityName })}
                 </EmptyTitle>
                 {hasFilter ? (
                     <EmptyDescription>

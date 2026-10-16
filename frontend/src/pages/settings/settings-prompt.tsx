@@ -783,7 +783,9 @@ function SettingsPromptEditor({ promptId }: { promptId?: string }) {
                                 <AlertCircle className="text-destructive size-12" />
                             </EmptyMedia>
                             <EmptyTitle>{t('settings:prompt.notFound')}</EmptyTitle>
-                            <EmptyDescription>{t('settings:prompt.notFoundDescription', { promptId })}</EmptyDescription>
+                            <EmptyDescription>
+                                {t('settings:prompt.notFoundDescription', { promptId })}
+                            </EmptyDescription>
                         </EmptyHeader>
                     </Empty>
                 </div>
@@ -966,7 +968,10 @@ function SettingsPromptEditor({ promptId }: { promptId?: string }) {
                         </DialogTitle>
                         <DialogDescription>
                             {t('settings:prompt.validationResultsDescription', {
-                                tab: activeTab === 'system' ? t('settings:prompt.systemPrompt') : t('settings:prompt.humanPrompt'),
+                                tab:
+                                    activeTab === 'system'
+                                        ? t('settings:prompt.systemPrompt')
+                                        : t('settings:prompt.humanPrompt'),
                             })}
                         </DialogDescription>
                     </DialogHeader>
@@ -989,7 +994,8 @@ function SettingsPromptEditor({ promptId }: { promptId?: string }) {
                                         {validationResult.message}
                                         {validationResult.details && (
                                             <div className="mt-2">
-                                                <strong>{t('settings:prompt.details')}</strong> {validationResult.details}
+                                                <strong>{t('settings:prompt.details')}</strong>{' '}
+                                                {validationResult.details}
                                             </div>
                                         )}
                                         {validationResult.line && (
@@ -1065,9 +1071,7 @@ function Variables({ currentTemplate, onVariableClick, variables }: VariablesPro
                             {variables.length}
                         </Badge>
                     </h4>
-                    <p className="text-muted-foreground mt-1 text-xs">
-                        {t('settings:prompt.variablesHint')}
-                    </p>
+                    <p className="text-muted-foreground mt-1 text-xs">{t('settings:prompt.variablesHint')}</p>
                 </div>
                 <div className="bg-background">{content}</div>
             </div>
