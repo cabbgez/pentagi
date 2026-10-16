@@ -44,3 +44,24 @@ __pycache__/
 
 # OS
 Thumbs.db
+
+# Local build / test artifacts
+/pentagi-image.tar
+/pentagi-image.tar.tag
+/backend/pentagi
+/build-offline.log
+/frontend/vitest-out.txt
+
+# Local scratch scripts
+/_show_conflicts.py
+
+# Stray copies of the examples/guides/worker_node assets
+/backend/pkg/version/README.md
+/backend/pkg/version/*.rego
+/backend/pkg/version/*.json
+/backend/pkg/version/*.sh
+/backend/pkg/version/*.service
+/backend/pkg/version/*.timer
+
+# Local intranet packaging scripts (pending review)
+/packaging/
