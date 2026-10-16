@@ -64,6 +64,11 @@ import { ResourcesCopyDialog } from '@/features/resources/resources-copy-dialog'
 import { ResourcesMkdirDialog } from '@/features/resources/resources-mkdir-dialog';
 import { ResourcesMoveDialog } from '@/features/resources/resources-move-dialog';
 import { buildResourcesDownloadHref, toFileNode } from '@/features/resources/resources-utils';
+import {
+    type ResourcesViewOptionKey,
+    type ResourcesViewOptions,
+    seedResourcesViewOptions,
+} from '@/features/resources/resources-view-options';
 import { useResourcesDelete } from '@/features/resources/use-resources-delete';
 import { useResourcesMove } from '@/features/resources/use-resources-move';
 import { useResourcesSearch } from '@/features/resources/use-resources-search';
@@ -72,53 +77,10 @@ import { useEffectAfterMount } from '@/hooks/use-effect-after-mount';
 import { useFilesDragAndDrop } from '@/hooks/use-files-drag-and-drop';
 import { usePageStorageKeys } from '@/hooks/use-page-storage-keys';
 import i18n from '@/i18n';
-import { copyToClipboard } from '@/lib/report';
+import { copyToClipboard } from '@/lib/clipboard';
 import { getDateLocale } from '@/lib/utils/i18n-locale';
-import { migrateLegacyViewOptions, saveViewOptions } from '@/lib/view-options-storage';
+import { saveViewOptions } from '@/lib/view-options-storage';
 import { useResources } from '@/providers/resources-provider';
-
-/**
- * Per-page persisted toggles for FileManager view options:
- *   - `size` / `modified`    — optional column visibility
- *   - `foldersFirst`         — whether directories cluster above files at every
- *                              level when a sort is active
- *   - `isModifiedRelative`   — render Modified as a relative label ("5m ago",
- *                              the FileManager default) when `true`, or as an
- *                              absolute, minute-precision timestamp when `false`
- *
- * All flags persist into the page's `viewOptions` storage bucket; the schema
- * is `Record<string, boolean>` so adding more toggles later does not require
- * a new key.
- */
-interface ResourcesViewOptions {
-    foldersFirst: boolean;
-    isModifiedRelative: boolean;
-    modified: boolean;
-    size: boolean;
-}
-
-const RESOURCES_PATH = '/resources';
-
-/** Defaults match FileManager's out-of-the-box behaviour (relative dates, folders first, both columns visible). */
-const defaultViewOptions: ResourcesViewOptions = {
-    foldersFirst: true,
-    isModifiedRelative: true,
-    modified: true,
-    size: true,
-};
-
-type ResourcesViewOptionKey = keyof ResourcesViewOptions;
-
-const seedViewOptions = (storageKey: string): ResourcesViewOptions => {
-    const stored = migrateLegacyViewOptions(RESOURCES_PATH, storageKey);
-
-    return {
-        foldersFirst: stored.foldersFirst ?? defaultViewOptions.foldersFirst,
-        isModifiedRelative: stored.isModifiedRelative ?? defaultViewOptions.isModifiedRelative,
-        modified: stored.modified ?? defaultViewOptions.modified,
-        size: stored.size ?? defaultViewOptions.size,
-    };
-};
 
 // The shared FileManager defaults to English-only date strings; localize both
 // the absolute and relative "Modified" column formatters here so the Resources
@@ -235,12 +197,11 @@ function Resources() {
     const [filesToCopy, setFilesToCopy] = useState<FileNode[] | null>(null);
 
     const { viewOptions: viewOptionsStorageKey } = usePageStorageKeys();
-    const [viewOptions, setViewOptions] = useState<ResourcesViewOptions>(() => seedViewOptions(viewOptionsStorageKey));
+    const [viewOptions, setViewOptions] = useState<ResourcesViewOptions>(() =>
+        seedResourcesViewOptions(viewOptionsStorageKey),
+    );
 
     useEffectAfterMount(() => {
-        // Cast: `ResourcesViewOptions` is structurally a `Record<string, boolean>`
-        // but TS doesn't widen object types with declared keys to an index
-        // signature implicitly.
         saveViewOptions(viewOptionsStorageKey, viewOptions as unknown as Record<string, boolean>);
     }, [viewOptions, viewOptionsStorageKey]);
 
@@ -343,17 +304,20 @@ function Resources() {
         [dndMoveAction],
     );
 
-    const handleCopyPath = useCallback(async (file: FileNode) => {
-        const wasCopied = await copyToClipboard(file.path);
+    const handleCopyPath = useCallback(
+        async (file: FileNode) => {
+            const wasCopied = await copyToClipboard(file.path);
 
-        if (wasCopied) {
-            toast.success(t('resources:pathCopied'));
+            if (wasCopied) {
+                toast.success(t('resources:pathCopied'));
 
-            return;
-        }
+                return;
+            }
 
-        toast.error(t('resources:copyPathFailed'));
-    }, [t]);
+            toast.error(t('resources:copyPathFailed'));
+        },
+        [t],
+    );
 
     // Join the selected paths with `\n` so the result pastes as a clean
     // newline-separated list into the agent chat, a shell command, or notes.
@@ -637,30 +601,30 @@ function Resources() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuCheckboxItem
-                                checked={viewOptions.size}
-                                onCheckedChange={() => toggleViewOption('size')}
+                                checked={viewOptions.isSizeVisible}
+                                onCheckedChange={() => toggleViewOption('isSizeVisible')}
                                 onSelect={(event) => event.preventDefault()}
                             >
                                 {t('resources:colSize')}
                             </DropdownMenuCheckboxItem>
                             <DropdownMenuCheckboxItem
-                                checked={viewOptions.modified}
-                                onCheckedChange={() => toggleViewOption('modified')}
+                                checked={viewOptions.isModifiedVisible}
+                                onCheckedChange={() => toggleViewOption('isModifiedVisible')}
                                 onSelect={(event) => event.preventDefault()}
                             >
                                 {t('resources:colModified')}
                             </DropdownMenuCheckboxItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuCheckboxItem
-                                checked={viewOptions.foldersFirst}
-                                onCheckedChange={() => toggleViewOption('foldersFirst')}
+                                checked={viewOptions.isFoldersFirst}
+                                onCheckedChange={() => toggleViewOption('isFoldersFirst')}
                                 onSelect={(event) => event.preventDefault()}
                             >
                                 {t('resources:foldersFirst')}
                             </DropdownMenuCheckboxItem>
                             <DropdownMenuCheckboxItem
                                 checked={viewOptions.isModifiedRelative}
-                                disabled={!viewOptions.modified}
+                                disabled={!viewOptions.isModifiedVisible}
                                 onCheckedChange={() => toggleViewOption('isModifiedRelative')}
                                 onSelect={(event) => event.preventDefault()}
                             >
@@ -675,13 +639,13 @@ function Resources() {
                     bulkActions={fileManagerBulkActions}
                     className="min-h-0 flex-1"
                     columns={{
-                        isModifiedVisible: viewOptions.modified,
-                        isSizeVisible: viewOptions.size,
+                        isModifiedVisible: viewOptions.isModifiedVisible,
+                        isSizeVisible: viewOptions.isSizeVisible,
                     }}
                     emptyAreaActions={fileManagerEmptyAreaActions}
                     emptyState={noResourcesState}
                     files={fileNodes}
-                    isFoldersFirst={viewOptions.foldersFirst}
+                    isFoldersFirst={viewOptions.isFoldersFirst}
                     isLoading={isInitialLoading}
                     labels={fileManagerLabels}
                     onExternalFileDrop={handleExternalFileDrop}
@@ -719,11 +683,13 @@ function Resources() {
                     handleOpenChange={handleDeleteDialogOpenChange}
                     isOpen={!!deletion.fileToDelete}
                     itemName={deletion.fileToDelete?.name}
-                    itemType={deletion.fileToDelete?.isDir ? t('resources:itemTypeDirectory') : t('resources:itemTypeResource')}
-                    title={
+                    itemType={
                         deletion.fileToDelete?.isDir
-                            ? t('resources:deleteDirectory')
-                            : t('resources:deleteResource')
+                            ? t('resources:itemTypeDirectory')
+                            : t('resources:itemTypeResource')
+                    }
+                    title={
+                        deletion.fileToDelete?.isDir ? t('resources:deleteDirectory') : t('resources:deleteResource')
                     }
                 />
             </div>

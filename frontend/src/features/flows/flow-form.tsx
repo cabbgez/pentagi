@@ -65,7 +65,7 @@ export interface FlowFormProps {
     isProviderDisabled?: boolean;
     isSubmitting?: boolean;
     onCancel?: () => Promise<void> | void;
-    onSubmit: (values: FlowFormValues) => Promise<void> | void;
+    onSubmit: (values: FlowFormValues) => boolean | Promise<boolean>;
     placeholder?: string;
     type: 'assistant' | 'automation';
 }
@@ -262,7 +262,10 @@ export function FlowForm({
     }, [isFormDisabled]);
 
     const handleSubmit = async (values: FlowFormValues) => {
-        await onSubmit(values);
+        if (!(await onSubmit(values))) {
+            return;
+        }
+
         resetField('message');
         resetField('resourceIds');
     };
@@ -774,7 +777,7 @@ export function FlowForm({
                                         </InputGroupButton>
                                     ) : (
                                         <InputGroupButton
-                                            aria-label={isCanceling ? 'Cancelling…' : 'Cancel'}
+                                            aria-label={isCanceling ? 'Stopping…' : 'Stop'}
                                             className="shrink-0"
                                             disabled={isCanceling || !onCancel}
                                             onClick={() => onCancel?.()}

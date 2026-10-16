@@ -13,6 +13,7 @@ function FlowCentralTabs() {
 
     return (
         <Tabs
+            activationMode="manual"
             className="flex size-full flex-col"
             onValueChange={handleTabChange}
             value={resolvedTab}

@@ -4,9 +4,10 @@ import { BarChart2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ResponsiveContainer } from 'recharts';
 
-import { DashboardError } from '@/components/dashboard/dashboard-error';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
+
+import { DashboardError } from './dashboard-error';
 
 export function ChartCard({
     children,

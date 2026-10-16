@@ -7,6 +7,7 @@ import {
     FileManager,
     type FileManagerBulkAction,
     type FileNode,
+    pluralizeItems,
 } from '@/components/shared/file-manager';
 import { OverwriteButtons, OverwriteDialog, useOverwrite } from '@/components/shared/overwrite';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';

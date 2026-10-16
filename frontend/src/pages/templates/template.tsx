@@ -47,9 +47,26 @@ import { routes } from '@/lib/routes';
 import { cn } from '@/lib/utils';
 import { type Template, useTemplates } from '@/providers/templates-provider';
 
-const formSchema = z.object({
-    text: z.string().trim().min(1, { message: i18n.t('templates:detail.validation.textRequired') }),
-    title: z.string().trim().min(1, { message: i18n.t('templates:detail.validation.titleRequired') }),
+// Mirrors the limits in backend/pkg/graph/context.go.
+const MAX_TEMPLATE_TITLE_LENGTH = 255;
+const MAX_TEMPLATE_TEXT_LENGTH = 65536;
+
+export const formSchema = z.object({
+    // The text is a document: it is sent as it was written, the line break it ends with included, and the
+    // limit counts all of it, as the mutation does.
+    text: z
+        .string()
+        .refine((value) => value.trim() !== '', { message: i18n.t('templates:detail.validation.textRequired') })
+        .refine((value) => [...value].length <= MAX_TEMPLATE_TEXT_LENGTH, {
+            message: `Text must not exceed ${MAX_TEMPLATE_TEXT_LENGTH} characters`,
+        }),
+    title: z
+        .string()
+        .trim()
+        .min(1, { message: i18n.t('templates:detail.validation.titleRequired') })
+        .refine((value) => [...value].length <= MAX_TEMPLATE_TITLE_LENGTH, {
+            message: `Title must not exceed ${MAX_TEMPLATE_TITLE_LENGTH} characters`,
+        }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -473,7 +490,9 @@ function TemplateForm({ templateId }: { templateId?: string }) {
                                     </Tooltip>
                                 ) : (
                                     <BreadcrumbPage className="min-w-0 truncate">
-                                        {isNew ? t('templates:detail.newTemplate') : (templateName ?? t('templates:detail.title'))}
+                                        {isNew
+                                            ? t('templates:detail.newTemplate')
+                                            : (templateName ?? t('templates:detail.title'))}
                                     </BreadcrumbPage>
                                 )}
                             </BreadcrumbItem>
@@ -786,7 +805,9 @@ function TemplateForm({ templateId }: { templateId?: string }) {
                         <CardContent className="flex flex-col items-center gap-4 pt-6 text-center">
                             <h2 className="text-xl font-semibold">{t('templates:detail.notFoundTitle')}</h2>
                             <p className="text-muted-foreground">{t('templates:detail.notFoundDescription')}</p>
-                            <Button onClick={() => navigate(routes.templates)}>{t('templates:detail.backToTemplates')}</Button>
+                            <Button onClick={() => navigate(routes.templates)}>
+                                {t('templates:detail.backToTemplates')}
+                            </Button>
                         </CardContent>
                     </Card>
                 </div>

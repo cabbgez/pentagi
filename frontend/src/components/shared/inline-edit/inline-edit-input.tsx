@@ -1,5 +1,5 @@
 import { Check, X } from 'lucide-react';
-import { type KeyboardEvent, type Ref } from 'react';
+import { type ChangeEvent, type KeyboardEvent, type Ref, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group';
@@ -70,6 +70,11 @@ export function InlineEditInput({
     placeholder,
 }: InlineEditInputProps) {
     const { t } = useTranslation();
+    const [isBlank, setIsBlank] = useState(() => !defaultValue?.trim());
+
+    const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+        setIsBlank(!event.target.value.trim());
+    };
 
     const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
         if (busy) {
@@ -78,7 +83,10 @@ export function InlineEditInput({
 
         if (event.key === 'Enter') {
             event.preventDefault();
-            onSave();
+
+            if (!isBlank) {
+                onSave();
+            }
 
             return;
         }
@@ -96,6 +104,7 @@ export function InlineEditInput({
                 className="text-foreground"
                 defaultValue={defaultValue}
                 maxLength={maxLength}
+                onChange={handleChange}
                 onKeyDown={handleKeyDown}
                 placeholder={placeholder}
                 ref={inputRef}
@@ -106,7 +115,7 @@ export function InlineEditInput({
             >
                 <InputGroupButton
                     aria-label={t('common:action.save')}
-                    disabled={busy}
+                    disabled={busy || isBlank}
                     onClick={onSave}
                 >
                     {busy ? <Spinner variant="circle" /> : <Check />}

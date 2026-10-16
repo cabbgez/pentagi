@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink, useLocation } from 'react-router-dom';
 
+import { VersionPanel } from '@/components/shared/version-panel';
 import {
     Sidebar,
     SidebarContent,
@@ -68,13 +69,16 @@ export function SettingsSidebar() {
         <Sidebar collapsible="icon">
             <SidebarHeader>
                 <SidebarMenu>
-                    <SidebarMenuItem className="flex items-center gap-2">
-                        <div className="flex aspect-square size-8 items-center justify-center">
-                            <SettingsIcon className="size-6" />
-                        </div>
-                        <div className="grid flex-1 text-left leading-tight">
-                            <span className="truncate font-semibold">{t('common:nav.settings')}</span>
-                        </div>
+                    <SidebarMenuItem>
+                        <VersionPanel
+                            icon={
+                                <SettingsIcon
+                                    className="size-8"
+                                    strokeWidth={4 / 3}
+                                />
+                            }
+                            title={t('common:nav.settings')}
+                        />
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>

@@ -49,12 +49,17 @@ export function PasswordChangeForm({
                         })
                         .refine(
                             (password) => {
-                                if (password.length > 15) {
+                                // Count code points, not UTF-16 units, so a short
+                                // string of astral characters is judged the way the
+                                // endpoint judges it.
+                                const length = [...password].length;
+
+                                if (length > 15) {
                                     return true;
                                 }
 
                                 return (
-                                    password.length >= 8 &&
+                                    length >= 8 &&
                                     /[0-9]/.test(password) &&
                                     /[a-z]/.test(password) &&
                                     /[A-Z]/.test(password) &&

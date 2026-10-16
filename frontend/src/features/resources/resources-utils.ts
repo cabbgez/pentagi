@@ -1,6 +1,8 @@
 import type { FileNode } from '@/components/shared/file-manager';
+import type { OverwriteConflict } from '@/components/shared/overwrite';
 import type { UserResourceFragmentFragment } from '@/graphql/types';
 
+import { getBaseName, getParentDir } from '@/lib/file-paths';
 import { baseUrl } from '@/models/api';
 
 import { RESOURCES_DOWNLOAD_API_PATH } from './resources-constants';
@@ -45,4 +47,27 @@ export const buildResourcesDownloadHref = (files: readonly FileNode[]): string =
     const query = buildPathsQuery(files.map((file) => file.path));
 
     return `${baseUrl}${RESOURCES_DOWNLOAD_API_PATH}?${query}`;
+};
+
+export const computeCommonParent = (files: readonly [FileNode, ...FileNode[]]): string => {
+    const first = getParentDir(files[0].path);
+
+    return files.every((file) => getParentDir(file.path) === first) ? first : '';
+};
+
+export const computeTargets = (files: readonly [FileNode, ...FileNode[]], destination: string): OverwriteConflict[] => {
+    const trimmed = destination.trim();
+    const treatAsDir = files.length > 1 || (trimmed.length > 1 && trimmed.endsWith('/'));
+
+    if (treatAsDir) {
+        const baseDir = trimmed.replace(/\/+$/, '');
+
+        return files.map((file) => {
+            const dest = baseDir ? `${baseDir}/${file.name}` : file.name;
+
+            return { destination: dest, destinationName: file.name };
+        });
+    }
+
+    return [{ destination: trimmed, destinationName: getBaseName(trimmed) }];
 };

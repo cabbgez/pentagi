@@ -338,6 +338,7 @@ function Templates() {
                     empty={{ entityName: t('templates:list.emptyEntityName') }}
                     filterPlaceholder={t('templates:list.filterPlaceholder')}
                     filterValue={filter}
+                    label="Templates"
                     onFilterChange={setFilter}
                     onRowClick={(template) => {
                         if (editingTemplateId !== template.id) {

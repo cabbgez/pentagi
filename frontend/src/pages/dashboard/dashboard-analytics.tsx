@@ -7,8 +7,7 @@ import { Area, AreaChart, Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } 
 
 import type { FlowFragmentFragment, UsageStatsPeriod } from '@/graphql/types';
 
-import { ChartCard, ChartTooltip } from '@/components/dashboard';
-import { DashboardError } from '@/components/dashboard/dashboard-error';
+import { ChartCard, ChartTooltip, DashboardError } from '@/components/dashboard';
 import { FlowStatusBadge } from '@/components/icons/flow-status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +22,7 @@ import {
 } from '@/graphql/types';
 import i18n from '@/i18n';
 import { cn } from '@/lib/utils';
+import { isSeriesEmpty } from '@/lib/utils/chart-series';
 import { formatCost, formatDuration, formatNumber, formatTokenCount } from '@/lib/utils/format';
 import { getDateLocale } from '@/lib/utils/i18n-locale';
 
@@ -66,33 +66,34 @@ type FlowExecution = {
 
 export function DashboardAnalytics({ period }: { period: UsageStatsPeriod }) {
     const { t } = useTranslation();
+    const timezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', []);
     const {
         data: usageByPeriodData,
         error: usageByPeriodError,
         loading: usageByPeriodLoading,
     } = useQuery(UsageStatsByPeriodDocument, {
-        variables: { period },
+        variables: { period, timezone },
     });
     const {
         data: toolcallsByPeriodData,
         error: toolcallsByPeriodError,
         loading: toolcallsByPeriodLoading,
     } = useQuery(ToolcallsStatsByPeriodDocument, {
-        variables: { period },
+        variables: { period, timezone },
     });
     const {
         data: flowsByPeriodData,
         error: flowsByPeriodError,
         loading: flowsByPeriodLoading,
     } = useQuery(FlowsStatsByPeriodDocument, {
-        variables: { period },
+        variables: { period, timezone },
     });
     const {
         data: executionStatsData,
         error: executionStatsError,
         loading: executionStatsLoading,
     } = useQuery(FlowsExecutionStatsByPeriodDocument, {
-        variables: { period },
+        variables: { period, timezone },
     });
     const { data: flowsData } = useQuery(FlowsDocument);
 
@@ -157,10 +158,10 @@ export function DashboardAnalytics({ period }: { period: UsageStatsPeriod }) {
         <div className="flex flex-col gap-6">
             <ChartCard
                 description={t('dashboard:flowsActivityDescription')}
-                empty={!flowsByPeriodLoading && flowsChartData.length === 0}
-                error={!!flowsByPeriodError}
+                empty={isSeriesEmpty(flowsChartData)}
+                error={!!flowsByPeriodError && !flowsByPeriodData}
                 height={320}
-                loading={flowsByPeriodLoading}
+                loading={flowsByPeriodLoading && !flowsByPeriodData}
                 title={t('dashboard:flowsActivityTitle')}
             >
                 <BarChart
@@ -217,9 +218,9 @@ export function DashboardAnalytics({ period }: { period: UsageStatsPeriod }) {
             <div className="grid gap-6 lg:grid-cols-2">
                 <ChartCard
                     description={t('dashboard:toolCallsOverTimeDescription')}
-                    empty={!toolcallsByPeriodLoading && toolcallsChartData.length === 0}
-                    error={!!toolcallsByPeriodError}
-                    loading={toolcallsByPeriodLoading}
+                    empty={isSeriesEmpty(toolcallsChartData)}
+                    error={!!toolcallsByPeriodError && !toolcallsByPeriodData}
+                    loading={toolcallsByPeriodLoading && !toolcallsByPeriodData}
                     title={t('dashboard:toolCallsOverTimeTitle')}
                 >
                     <BarChart
@@ -263,9 +264,9 @@ export function DashboardAnalytics({ period }: { period: UsageStatsPeriod }) {
 
                 <ChartCard
                     description={t('dashboard:tokenUsageDescription')}
-                    empty={!usageByPeriodLoading && usageChartData.length === 0}
-                    error={!!usageByPeriodError}
-                    loading={usageByPeriodLoading}
+                    empty={isSeriesEmpty(usageChartData)}
+                    error={!!usageByPeriodError && !usageByPeriodData}
+                    loading={usageByPeriodLoading && !usageByPeriodData}
                     title={t('dashboard:tokenUsageTitle')}
                 >
                     <AreaChart
@@ -321,10 +322,10 @@ export function DashboardAnalytics({ period }: { period: UsageStatsPeriod }) {
 
             <ChartCard
                 description={t('dashboard:costOverTimeDescription')}
-                empty={!usageByPeriodLoading && usageChartData.length === 0}
-                error={!!usageByPeriodError}
+                empty={isSeriesEmpty(usageChartData)}
+                error={!!usageByPeriodError && !usageByPeriodData}
                 height={240}
-                loading={usageByPeriodLoading}
+                loading={usageByPeriodLoading && !usageByPeriodData}
                 title={t('dashboard:costOverTimeTitle')}
             >
                 <AreaChart
@@ -383,14 +384,14 @@ export function DashboardAnalytics({ period }: { period: UsageStatsPeriod }) {
                     <CardDescription>{t('dashboard:flowExecutionDetailsDescription')}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {executionStatsLoading ? (
+                    {executionStatsLoading && !executionStatsData ? (
                         <div className="flex items-center justify-center py-8">
                             <Spinner
                                 className="text-muted-foreground size-6"
                                 variant="circle"
                             />
                         </div>
-                    ) : executionStatsError ? (
+                    ) : executionStatsError && !executionStatsData ? (
                         <DashboardError className="py-8" />
                     ) : !deferredExecutionStats.length ? (
                         <p className="text-muted-foreground py-8 text-center text-sm">

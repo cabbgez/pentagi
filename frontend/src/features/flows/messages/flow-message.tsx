@@ -9,6 +9,7 @@ import Terminal from '@/components/shared/terminal';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { MessageLogType, ResultFormat } from '@/graphql/types';
 import { copyMessageToClipboard } from '@/lib/clipboard';
+import { matchesSearchTerm } from '@/lib/text-filter';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/utils/format';
 
@@ -18,14 +19,6 @@ interface FlowMessageProps {
     log: AssistantLogFragmentFragment | MessageLogFragmentFragment;
     searchValue?: string;
 }
-
-const containsSearchValue = (text: null | string | undefined, searchValue: string): boolean => {
-    if (!text || !searchValue.trim()) {
-        return false;
-    }
-
-    return text.toLowerCase().includes(searchValue.toLowerCase().trim());
-};
 
 function FlowMessage({ log, searchValue = '' }: FlowMessageProps) {
     const { t } = useTranslation();
@@ -40,8 +33,8 @@ function FlowMessage({ log, searchValue = '' }: FlowMessageProps) {
         }
 
         return {
-            hasResultMatch: containsSearchValue(result, trimmedSearch),
-            hasThinkingMatch: containsSearchValue(thinking, trimmedSearch),
+            hasResultMatch: matchesSearchTerm(result, trimmedSearch),
+            hasThinkingMatch: matchesSearchTerm(thinking, trimmedSearch),
         };
     }, [searchValue, thinking, result]);
 

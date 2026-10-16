@@ -4,11 +4,9 @@ import { useTranslation } from 'react-i18next';
 
 import type { UsageStatsFragmentFragment } from '@/graphql/types';
 
-import { MetricCard } from '@/components/dashboard';
-import { DashboardError } from '@/components/dashboard/dashboard-error';
+import { DashboardError, LoadingTable, MetricCard, UsageStatsRow } from '@/components/dashboard';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Spinner } from '@/components/ui/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
     FlowsStatsTotalDocument,
@@ -92,9 +90,9 @@ export function DashboardOverview() {
                         subtasks: flowsTotal?.totalSubtasksCount ?? 0,
                         tasks: flowsTotal?.totalTasksCount ?? 0,
                     })}
-                    error={!!flowsTotalError}
+                    error={!!flowsTotalError && !flowsTotalData}
                     icon={<GitFork className="text-muted-foreground size-4" />}
-                    loading={flowsTotalLoading}
+                    loading={flowsTotalLoading && !flowsTotalData}
                     title={t('dashboard:totalFlows')}
                     value={flowsTotal ? formatNumber(flowsTotal.totalFlowsCount) : '0'}
                 />
@@ -102,25 +100,25 @@ export function DashboardOverview() {
                     description={t('dashboard:toolCallsDescription', {
                         duration: toolcallsTotal ? formatDuration(toolcallsTotal.totalDurationSeconds) : '—',
                     })}
-                    error={!!toolcallsTotalError}
+                    error={!!toolcallsTotalError && !toolcallsTotalData}
                     icon={<Activity className="text-muted-foreground size-4" />}
-                    loading={toolcallsTotalLoading}
+                    loading={toolcallsTotalLoading && !toolcallsTotalData}
                     title={t('dashboard:toolCalls')}
                     value={toolcallsTotal ? formatNumber(toolcallsTotal.totalCount) : '0'}
                 />
                 <MetricCard
                     description={t('dashboard:totalTokensDescription')}
-                    error={!!usageTotalError}
+                    error={!!usageTotalError && !usageTotalData}
                     icon={<Cpu className="text-muted-foreground size-4" />}
-                    loading={usageTotalLoading}
+                    loading={usageTotalLoading && !usageTotalData}
                     title={t('dashboard:totalTokens')}
                     value={formatTokenCount(totalTokens)}
                 />
                 <MetricCard
                     description={t('dashboard:totalCostDescription')}
-                    error={!!usageTotalError}
+                    error={!!usageTotalError && !usageTotalData}
                     icon={<CircleDollarSign className="text-muted-foreground size-4" />}
-                    loading={usageTotalLoading}
+                    loading={usageTotalLoading && !usageTotalData}
                     title={t('dashboard:totalCost')}
                     value={formatCost(totalCost)}
                 />
@@ -132,12 +130,15 @@ export function DashboardOverview() {
                     <CardDescription>{t('dashboard:usageByProviderDescription')}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {usageByProviderLoading ? (
+                    {usageByProviderLoading && !usageByProviderData ? (
                         <LoadingTable />
-                    ) : usageByProviderError ? (
+                    ) : usageByProviderError && !usageByProviderData ? (
                         <ErrorTable />
                     ) : (
-                        <UsageStatsTable rows={providerRows} />
+                        <UsageStatsTable
+                            label="Usage by Provider"
+                            rows={providerRows}
+                        />
                     )}
                 </CardContent>
             </Card>
@@ -148,12 +149,15 @@ export function DashboardOverview() {
                     <CardDescription>{t('dashboard:usageByModelDescription')}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {usageByModelLoading ? (
+                    {usageByModelLoading && !usageByModelData ? (
                         <LoadingTable />
-                    ) : usageByModelError ? (
+                    ) : usageByModelError && !usageByModelData ? (
                         <ErrorTable />
                     ) : (
-                        <UsageStatsTable rows={modelRows} />
+                        <UsageStatsTable
+                            label="Usage by Model"
+                            rows={modelRows}
+                        />
                     )}
                 </CardContent>
             </Card>
@@ -164,12 +168,15 @@ export function DashboardOverview() {
                     <CardDescription>{t('dashboard:usageByAgentTypeDescription')}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {usageByAgentTypeLoading ? (
+                    {usageByAgentTypeLoading && !usageByAgentTypeData ? (
                         <LoadingTable />
-                    ) : usageByAgentTypeError ? (
+                    ) : usageByAgentTypeError && !usageByAgentTypeData ? (
                         <ErrorTable />
                     ) : (
-                        <UsageStatsTable rows={agentTypeRows} />
+                        <UsageStatsTable
+                            label="Usage by Agent Type"
+                            rows={agentTypeRows}
+                        />
                     )}
                 </CardContent>
             </Card>
@@ -180,17 +187,19 @@ export function DashboardOverview() {
                     <CardDescription>{t('dashboard:toolCallsByFunctionDescription')}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {toolcallsByFunctionLoading ? (
+                    {toolcallsByFunctionLoading && !toolcallsByFunctionData ? (
                         <LoadingTable />
-                    ) : toolcallsByFunctionError ? (
+                    ) : toolcallsByFunctionError && !toolcallsByFunctionData ? (
                         <ErrorTable />
                     ) : (
-                        <Table>
+                        <Table aria-label="Tool Calls by Function">
                             <TableHeader>
                                 <TableRow>
                                     <TableHead className="whitespace-nowrap">{t('dashboard:colFunction')}</TableHead>
                                     <TableHead className="whitespace-nowrap">{t('dashboard:colType')}</TableHead>
-                                    <TableHead className="text-right whitespace-nowrap">{t('dashboard:colCount')}</TableHead>
+                                    <TableHead className="text-right whitespace-nowrap">
+                                        {t('dashboard:colCount')}
+                                    </TableHead>
                                     <TableHead className="text-right whitespace-nowrap">
                                         {t('dashboard:colTotalDuration')}
                                     </TableHead>
@@ -230,39 +239,17 @@ function ErrorTable() {
     return <DashboardError className="py-8" />;
 }
 
-function LoadingTable() {
-    return (
-        <div className="flex items-center justify-center py-8">
-            <Spinner
-                className="text-muted-foreground size-6"
-                variant="circle"
-            />
-        </div>
-    );
-}
-
-function UsageStatsRow({ label, stats }: { label: string; stats: UsageStatsFragmentFragment }) {
-    return (
-        <TableRow>
-            <TableCell className="font-medium">{label}</TableCell>
-            <TableCell className="text-right">{formatTokenCount(stats.totalUsageIn)}</TableCell>
-            <TableCell className="text-right">{formatTokenCount(stats.totalUsageOut)}</TableCell>
-            <TableCell className="text-right">{formatTokenCount(stats.totalUsageCacheIn)}</TableCell>
-            <TableCell className="text-right">{formatTokenCount(stats.totalUsageCacheOut)}</TableCell>
-            <TableCell className="text-right">{formatCost(stats.totalUsageCostIn)}</TableCell>
-            <TableCell className="text-right">{formatCost(stats.totalUsageCostOut)}</TableCell>
-            <TableCell className="text-right font-semibold">
-                {formatCost(stats.totalUsageCostIn + stats.totalUsageCostOut)}
-            </TableCell>
-        </TableRow>
-    );
-}
-
-function UsageStatsTable({ rows }: { rows: Array<{ label: string; stats: UsageStatsFragmentFragment }> }) {
+function UsageStatsTable({
+    label,
+    rows,
+}: {
+    label: string;
+    rows: Array<{ label: string; stats: UsageStatsFragmentFragment }>;
+}) {
     const { t } = useTranslation();
 
     return (
-        <Table>
+        <Table aria-label={label}>
             <TableHeader>
                 <TableRow>
                     <TableHead className="whitespace-nowrap">{t('dashboard:colName')}</TableHead>

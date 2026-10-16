@@ -7,25 +7,24 @@ import (
 	"fmt"
 	"hash/crc32"
 	"io"
+	"net/netip"
 	"os"
 	"path"
 	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
+	"time"
 
 	"pentagi/pkg/config"
 	"pentagi/pkg/database"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/api/types/volume"
-	"github.com/docker/docker/client"
-	"github.com/docker/go-connections/nat"
+	cerrdefs "github.com/containerd/errdefs"
+	"github.com/moby/moby/api/pkg/stdcopy"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/mount"
+	"github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/client"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 )
@@ -52,23 +51,45 @@ const (
 	// compromised sandbox can't stream unbounded output into memory; sized as the
 	// entry cap × a generous per-path length (PATH_MAX).
 	maxListStdoutBytes = maxListEntries * 4096
+	// containerStartupGrace is how long a freshly started container has to stay
+	// alive before it is accepted as started. Starting is asynchronous: the
+	// daemon acknowledges the request as soon as the process is spawned, so an
+	// entrypoint that dies milliseconds later still looks like a successful
+	// start. Everything downstream assumes a live sandbox, so it is verified
+	// here instead.
+	containerStartupGrace = 1500 * time.Millisecond
+	// maxStartupLogBytes bounds the output tail attached to a startup failure so
+	// a container that floods its log before dying can't inflate the error.
+	maxStartupLogBytes = 4096
+	// startupLogTailLines is how many trailing log lines are quoted in a startup
+	// failure; enough for a stack trace or a usage message.
+	startupLogTailLines = "20"
+	// containerDiscardTimeout bounds the cleanup of a container that failed to
+	// start, so an unresponsive daemon delays the error instead of withholding
+	// it indefinitely.
+	containerDiscardTimeout = 30 * time.Second
+	// A worker's PID 1 is `tail -f /dev/null` (see flowToolsExecutor.Prepare),
+	// which never acts on SIGTERM, so whatever grace is given is waited out in full.
+	containerStopGrace = 2
 )
 
 type dockerClient struct {
-	db             database.Querier
-	logger         *logrus.Logger
-	dataDir        string
-	hostDir        string
-	client         *client.Client
-	inside         bool
-	defImage       string
-	socket         string
-	network        string
-	publicIP       string
-	portsBase      int
-	labels         map[string]string
-	insideEnv      []string
-	insideCertPath string
+	db                   database.Querier
+	logger               *logrus.Logger
+	dataDir              string
+	hostDir              string
+	client               *client.Client
+	inside               bool
+	defImage             string
+	socket               string
+	network              string
+	publicIP             string
+	portsBase            int
+	labels               map[string]string
+	insideEnv            []string
+	insideCertPath       string
+	orchestratorDaemonID string
+	sandboxProbeRunner   func(context.Context, *config.Config) (sandboxReport, error)
 }
 
 type DockerClient interface {
@@ -77,15 +98,22 @@ type DockerClient interface {
 	StopContainer(ctx context.Context, containerID string, dbID int64) error
 	RemoveContainer(ctx context.Context, containerID string, dbID int64) error
 	IsContainerRunning(ctx context.Context, containerID string) (bool, error)
-	ContainerExecCreate(ctx context.Context, container string, config container.ExecOptions) (container.ExecCreateResponse, error)
-	ContainerExecAttach(ctx context.Context, execID string, config container.ExecAttachOptions) (types.HijackedResponse, error)
-	ContainerExecInspect(ctx context.Context, execID string) (container.ExecInspect, error)
+	KillFlowCommands(ctx context.Context, containerID string) error
+	ContainerExecCreate(ctx context.Context, container string, config client.ExecCreateOptions) (client.ExecCreateResult, error)
+	ContainerExecAttach(ctx context.Context, execID string, config client.ExecAttachOptions) (client.HijackedResponse, error)
+	ContainerExecInspect(ctx context.Context, execID string) (client.ExecInspectResult, error)
 	ContainerStatPath(ctx context.Context, containerID string, path string) (container.PathStat, error)
 	ListContainerDir(ctx context.Context, containerID string, dirPath string) (ContainerDirListing, error)
-	CopyToContainer(ctx context.Context, containerID string, dstPath string, content io.Reader, options container.CopyToContainerOptions) error
+	CopyToContainer(ctx context.Context, containerID string, dstPath string, content io.Reader, options client.CopyToContainerOptions) error
 	CopyFromContainer(ctx context.Context, containerID string, srcPath string) (io.ReadCloser, container.PathStat, error)
 	Cleanup(ctx context.Context) error
 	GetDefaultImage() string
+}
+
+// IsNotFound keeps the containerd error taxonomy inside this package, so callers
+// in pkg/server can ask the question without importing it themselves.
+func IsNotFound(err error) bool {
+	return cerrdefs.IsNotFound(err)
 }
 
 // GetPrimaryContainerPorts returns the host ports for a flow relative to
@@ -103,42 +131,27 @@ func GetPrimaryContainerPorts(portsBase int, flowID int64) []int {
 }
 
 func NewDockerClient(ctx context.Context, db database.Querier, cfg *config.Config) (DockerClient, error) {
-	cli, err := client.NewClientWithOpts(client.FromEnv)
+	cli, err := client.New(client.FromEnv)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize docker client: %w", err)
 	}
-	cli.NegotiateAPIVersion(ctx)
 
-	info, err := cli.Info(ctx)
+	infoResult, err := cli.Info(ctx, client.InfoOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get docker info: %w", err)
 	}
+	info := infoResult.Info
 
 	// Resolve which host socket (if any) gets bind-mounted into worker containers.
 	// Autodetection is skipped when DOCKER_INSIDE_HOST designates a daemon
-	// endpoint for sandboxes: mounting the host socket alongside it would grant an
-	// agent control of the daemon running PentAGI itself.
+	// endpoint for sandboxes: a socket alongside it could bypass that endpoint
+	// and might expose the daemon that runs PentAGI.
 	socket, autodetectSocket := cfg.WorkerDockerSocket()
 	if autodetectSocket {
 		socket = getHostDockerSocket(ctx, cli)
 	}
 	inside := cfg.DockerInside
-	if inside {
-		switch {
-		case cfg.DockerSocket != "":
-			logrus.Infof("DOCKER_INSIDE=true: worker containers will be given Docker access "+
-				"via the configured socket %q.", cfg.DockerSocket)
-		case cfg.DockerInsideHost != "":
-			logrus.Infof("DOCKER_INSIDE=true: worker containers will be given Docker access "+
-				"to the configured external daemon at %q.", cfg.DockerInsideHost)
-		default:
-			logrus.Warn("DOCKER_INSIDE=true with neither DOCKER_SOCKET nor DOCKER_INSIDE_HOST set: " +
-				"the host Docker socket will be autodetected and bind-mounted into every worker " +
-				"container, so any process inside it gets control of the same daemon that runs " +
-				"PentAGI. Set DOCKER_SOCKET or DOCKER_INSIDE_HOST explicitly, or front the socket " +
-				"with a least-privilege proxy (e.g. Tecnativa/docker-socket-proxy), if that is not intended.")
-		}
-	}
+	logWorkerDaemonIsolation(ctx, cfg, cli)
 	netName := cfg.DockerNetwork
 	publicIP := cfg.DockerPublicIP
 	defImage := strings.ToLower(cfg.DockerDefaultImage)
@@ -176,22 +189,54 @@ func NewDockerClient(ctx context.Context, db database.Querier, cfg *config.Confi
 		"public_ip":          publicIP,
 	}).Debug("Docker client initialized")
 
-	return &dockerClient{
-		db:             db,
-		client:         cli,
-		dataDir:        dataDir,
-		hostDir:        hostDir,
-		logger:         logger,
-		inside:         inside,
-		defImage:       defImage,
-		socket:         socket,
-		network:        netName,
-		publicIP:       publicIP,
-		portsBase:      cfg.DockerPortsBase,
-		labels:         cfg.TenantLabels(),
-		insideEnv:      cfg.WorkerDockerEnv(),
-		insideCertPath: cfg.WorkerDockerCertPath(),
-	}, nil
+	dockerCli := &dockerClient{
+		db:                   db,
+		client:               cli,
+		dataDir:              dataDir,
+		hostDir:              hostDir,
+		logger:               logger,
+		inside:               inside,
+		defImage:             defImage,
+		socket:               socket,
+		network:              netName,
+		publicIP:             publicIP,
+		portsBase:            cfg.DockerPortsBase,
+		labels:               cfg.TenantLabels(),
+		insideEnv:            cfg.WorkerDockerEnv(),
+		insideCertPath:       cfg.WorkerDockerCertPath(),
+		orchestratorDaemonID: info.ID,
+	}
+
+	// The probe needs a container, so the decision cannot be made until the
+	// client that creates one exists.
+	dockerCli.decideSandbox(ctx, cfg)
+
+	return dockerCli, nil
+}
+
+// applyWorkerDockerAccess gives a worker the Docker access it is configured to
+// have. Shared with the startup sandbox check, which has to hand its container
+// exactly what a flow's worker gets or it would be measuring something else.
+func (dc *dockerClient) applyWorkerDockerAccess(config *container.Config, hostConfig *container.HostConfig) {
+	if !dc.inside {
+		return
+	}
+
+	// The socket is empty when DOCKER_INSIDE_HOST designates a daemon endpoint
+	// instead; binding "" would produce a malformed mount spec.
+	if dc.socket != "" {
+		hostConfig.Binds = append(hostConfig.Binds, fmt.Sprintf("%s:%s", dc.socket, defaultDockerSocketPath))
+	}
+
+	// Point the sandbox's Docker CLI at the designated daemon.
+	config.Env = append(config.Env, dc.insideEnv...)
+
+	// TLS material is mounted read-only at the same path on both sides so the
+	// injected DOCKER_CERT_PATH resolves unchanged inside the container.
+	if dc.insideCertPath != "" {
+		hostConfig.Binds = append(hostConfig.Binds,
+			fmt.Sprintf("%s:%s:ro", dc.insideCertPath, dc.insideCertPath))
+	}
 }
 
 func (dc *dockerClient) RunContainer(
@@ -215,7 +260,6 @@ func (dc *dockerClient) RunContainer(
 	if hostDir != "" {
 		hostDir = filepath.Join(hostDir, fmt.Sprintf(containerLocalCwdTemplate, flowID))
 	}
-
 	logger := dc.logger.WithContext(ctx).WithFields(logrus.Fields{
 		"image":    config.Image,
 		"name":     containerName,
@@ -305,35 +349,21 @@ func (dc *dockerClient) RunContainer(
 	}
 
 	if hostDir == "" {
-		volumeName, err := dc.client.VolumeCreate(ctx, volume.CreateOptions{
-			Name:   fmt.Sprintf("%s%s", containerName, WorkerVolumeNameSuffix),
+		volumeName := fmt.Sprintf("%s%s", containerName, WorkerVolumeNameSuffix)
+		volumeResult, err := dc.client.VolumeCreate(ctx, client.VolumeCreateOptions{
+			Name:   volumeName,
 			Driver: "local",
 			Labels: dc.labels,
 		})
 		if err != nil {
+			defer updateContainerInfo(database.ContainerStatusFailed, "")
 			return database.Container{}, fmt.Errorf("failed to create volume: %w", err)
 		}
-		hostDir = volumeName.Name
+		hostDir = volumeResult.Volume.Name
 	}
 	hostConfig.Binds = append(hostConfig.Binds, fmt.Sprintf("%s:%s", hostDir, WorkFolderPathInContainer))
 
-	if dc.inside {
-		// The socket is empty when DOCKER_INSIDE_HOST designates a daemon endpoint
-		// instead; binding "" would produce a malformed mount spec.
-		if dc.socket != "" {
-			hostConfig.Binds = append(hostConfig.Binds, fmt.Sprintf("%s:%s", dc.socket, defaultDockerSocketPath))
-		}
-
-		// Point the sandbox's Docker CLI at the designated daemon.
-		config.Env = append(config.Env, dc.insideEnv...)
-
-		// TLS material is mounted read-only at the same path on both sides so the
-		// injected DOCKER_CERT_PATH resolves unchanged inside the container.
-		if dc.insideCertPath != "" {
-			hostConfig.Binds = append(hostConfig.Binds,
-				fmt.Sprintf("%s:%s:ro", dc.insideCertPath, dc.insideCertPath))
-		}
-	}
+	dc.applyWorkerDockerAccess(config, hostConfig)
 
 	// no-new-privileges was evaluated and deliberately not applied: the capability
 	// bounding set in tools.go Prepare already caps what any process can gain, so
@@ -367,20 +397,32 @@ func (dc *dockerClient) RunContainer(
 	} else {
 		// Bridge network mode: configure port bindings and custom network
 		if hostConfig.PortBindings == nil {
-			hostConfig.PortBindings = nat.PortMap{}
+			hostConfig.PortBindings = network.PortMap{}
 		}
 		if config.ExposedPorts == nil {
-			config.ExposedPorts = nat.PortSet{}
+			config.ExposedPorts = network.PortSet{}
+		}
+		var hostIP netip.Addr
+		if dc.publicIP != "" {
+			var err error
+			hostIP, err = netip.ParseAddr(dc.publicIP)
+			if err != nil {
+				defer updateContainerInfo(database.ContainerStatusFailed, "")
+				return database.Container{}, fmt.Errorf("invalid Docker public IP %q: %w", dc.publicIP, err)
+			}
 		}
 		for _, port := range GetPrimaryContainerPorts(dc.portsBase, flowID) {
-			natPort := nat.Port(fmt.Sprintf("%d/tcp", port))
-			hostConfig.PortBindings[natPort] = []nat.PortBinding{
+			containerPort, ok := network.PortFrom(uint16(port), network.TCP)
+			if !ok {
+				return database.Container{}, fmt.Errorf("invalid container port %d", port)
+			}
+			hostConfig.PortBindings[containerPort] = []network.PortBinding{
 				{
-					HostIP:   dc.publicIP,
+					HostIP:   hostIP,
 					HostPort: fmt.Sprintf("%d", port),
 				},
 			}
-			config.ExposedPorts[natPort] = struct{}{}
+			config.ExposedPorts[containerPort] = struct{}{}
 		}
 
 		if dc.network != "" {
@@ -392,7 +434,28 @@ func (dc *dockerClient) RunContainer(
 		}
 	}
 
-	resp, err := dc.client.ContainerCreate(ctx, config, hostConfig, networkingConfig, nil, containerName)
+	// Config is referenced by pointer, so a later image fallback is picked up by
+	// the retries below without rebuilding the options.
+	createOptions := client.ContainerCreateOptions{
+		Config:           config,
+		HostConfig:       hostConfig,
+		NetworkingConfig: networkingConfig,
+		Name:             containerName,
+	}
+
+	resp, err := dc.client.ContainerCreate(ctx, createOptions)
+	if err != nil && cerrdefs.IsConflict(err) {
+		// The name is still held by an earlier container, typically one left
+		// behind when PentAGI died mid-start. Nothing can be created under that
+		// name until it is gone, and the image is not at fault, so clear it and
+		// retry before blaming the image below.
+		logger.WithError(err).Warn("container name is already taken, removing the container holding it")
+		if staleErr := dc.removeContainerByName(ctx, containerName); staleErr != nil {
+			logger.WithError(staleErr).Warn("failed to remove the container holding the name")
+		} else {
+			resp, err = dc.client.ContainerCreate(ctx, createOptions)
+		}
+	}
 	if err != nil {
 		if config.Image == dc.defImage {
 			logger.WithError(err).Warn("failed to create container with default image")
@@ -407,24 +470,13 @@ func (dc *dockerClient) RunContainer(
 		}
 
 		// try to cleanup previous container
-		containers, err := dc.client.ContainerList(ctx, container.ListOptions{})
-		if err != nil {
+		if err := dc.removeContainerByName(ctx, containerName); err != nil {
 			defer updateContainerInfo(database.ContainerStatusFailed, "")
-			return database.Container{}, fmt.Errorf("failed to list containers: %w", err)
-		}
-		options := container.RemoveOptions{
-			RemoveVolumes: true,
-			Force:         true,
-		}
-		for _, container := range containers {
-			// containerName is unique for PentAGI environment, so we can use it to find the container
-			if len(container.Names) > 0 && container.Names[0] == containerName {
-				_ = dc.client.ContainerRemove(ctx, container.ID, options)
-			}
+			return database.Container{}, err
 		}
 
 		// try to create container again with default image
-		resp, err = dc.client.ContainerCreate(ctx, config, hostConfig, networkingConfig, nil, containerName)
+		resp, err = dc.client.ContainerCreate(ctx, createOptions)
 		if err != nil {
 			defer updateContainerInfo(database.ContainerStatusFailed, "")
 			return database.Container{}, fmt.Errorf("failed to create container '%s': %w", config.Image, err)
@@ -435,25 +487,263 @@ func (dc *dockerClient) RunContainer(
 	logger = logger.WithField("local_id", containerID)
 	logger.Info("container created")
 
-	err = dc.client.ContainerStart(ctx, containerID, container.StartOptions{})
+	// Arm the exit watch before starting. The restart policy replaces a container
+	// that dies with a fresh attempt within milliseconds, and from then on the
+	// daemon reports the state of that new attempt — the status code that
+	// actually killed the sandbox is no longer reachable. Watching from before
+	// the start is what makes it observable at all.
+	waitCtx, cancelWait := context.WithCancel(ctx)
+	defer cancelWait()
+	exitWatch := dc.client.ContainerWait(waitCtx, containerID, client.ContainerWaitOptions{
+		Condition: container.WaitConditionNextExit,
+	})
+
+	_, err = dc.client.ContainerStart(ctx, containerID, client.ContainerStartOptions{})
 	if err != nil {
 		defer updateContainerInfo(database.ContainerStatusFailed, containerID)
+		dc.discardContainer(ctx, containerID, logger)
 		return database.Container{}, fmt.Errorf("failed to start container: %w", err)
 	}
 
+	// The start call above only proves the daemon accepted the request. Callers
+	// hand this container straight to the agents, so a sandbox that is already
+	// dead has to be reported here rather than degrade into unrelated exec
+	// failures against a container that never ran.
+	if err := dc.ensureContainerStarted(ctx, containerName, containerID, exitWatch); err != nil {
+		defer updateContainerInfo(database.ContainerStatusFailed, containerID)
+		logger.WithError(err).Error("container did not stay running after start")
+		dc.discardContainer(ctx, containerID, logger)
+		return database.Container{}, err
+	}
 	logger.Info("container started")
 	updateContainerInfo(database.ContainerStatusRunning, containerID)
 
 	return dbContainer, nil
 }
 
+// ContainerStartupError reports a container that the daemon started but that did
+// not stay up. It carries the daemon's own diagnostics together with a tail of
+// the container output, so the reason is visible where the failure surfaces
+// instead of only on the host the sandbox ran on.
+type ContainerStartupError struct {
+	ContainerName string
+	ContainerID   string
+	Status        string
+	ExitCode      int
+	RestartCount  int
+	OOMKilled     bool
+	DaemonError   string
+	LogTail       string
+}
+
+func (e *ContainerStartupError) Error() string {
+	message := fmt.Sprintf("container '%s' did not stay running after start (state '%s', exit code %d)",
+		e.ContainerName, e.Status, e.ExitCode)
+	if e.RestartCount > 0 {
+		message += fmt.Sprintf(", restarted %d time(s)", e.RestartCount)
+	}
+	if e.OOMKilled {
+		message += ", terminated by the OOM killer"
+	}
+	if e.DaemonError != "" {
+		message += fmt.Sprintf(", daemon reported: %s", e.DaemonError)
+	}
+	if e.LogTail != "" {
+		message += fmt.Sprintf(", last output: %s", e.LogTail)
+	}
+	return message
+}
+
+// ensureContainerStarted confirms the container is really running. It reports
+// the exit as soon as it happens, and otherwise waits out containerStartupGrace:
+// an entrypoint that dies milliseconds after start would still be acknowledged
+// as a successful start, so surviving the window is the only evidence that the
+// sandbox is usable.
+func (dc *dockerClient) ensureContainerStarted(
+	ctx context.Context,
+	containerName, containerID string,
+	exitWatch client.ContainerWaitResult,
+) error {
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("interrupted while starting container '%s': %w", containerName, ctx.Err())
+
+	case exit := <-exitWatch.Result:
+		startupErr := dc.newStartupError(ctx, containerName, containerID, int(exit.StatusCode))
+		if exit.Error != nil {
+			startupErr.DaemonError = exit.Error.Message
+		}
+		return startupErr
+
+	case err := <-exitWatch.Error:
+		// The watch itself broke, which says nothing about the container. Ask
+		// the daemon directly rather than assuming either outcome.
+		return dc.verifyContainerRunning(ctx, containerName, containerID, err)
+
+	case <-time.After(containerStartupGrace):
+		// Still alive. Drain the watch so the reader goroutine behind it can
+		// finish once the request is cancelled on the way out.
+		go func() {
+			select {
+			case <-exitWatch.Result:
+			case <-exitWatch.Error:
+			}
+		}()
+		return nil
+	}
+}
+
+// verifyContainerRunning is the fallback for when the exit watch cannot be used:
+// the container state is read directly, so a broken watch degrades into a slower
+// check instead of into a sandbox that is wrongly assumed to be alive.
+func (dc *dockerClient) verifyContainerRunning(
+	ctx context.Context, containerName, containerID string, watchErr error,
+) error {
+	inspectResult, err := dc.client.ContainerInspect(ctx, containerID, client.ContainerInspectOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to check container '%s' after start (exit watch failed: %v): %w",
+			containerName, watchErr, err)
+	}
+
+	inspection := inspectResult.Container
+	state := inspection.State
+	if state == nil {
+		// the daemon always reports state for a container it just started, so
+		// its absence means the container is not in a usable state
+		return fmt.Errorf("no state reported for container '%s' after start", containerName)
+	}
+
+	// A recorded restart is a failure of its own: under the on-failure policy a
+	// crash-looping sandbox keeps coming back up without ever being usable.
+	if state.Running && !state.Restarting && inspection.RestartCount == 0 {
+		return nil
+	}
+
+	startupErr := dc.newStartupError(ctx, containerName, containerID, state.ExitCode)
+	startupErr.DaemonError = state.Error
+	return startupErr
+}
+
+// newStartupError assembles the report for a container that did not stay up,
+// enriching the authoritative exit code with whatever the daemon still knows and
+// with the container's own last words.
+func (dc *dockerClient) newStartupError(
+	ctx context.Context, containerName, containerID string, exitCode int,
+) *ContainerStartupError {
+	startupErr := &ContainerStartupError{
+		ContainerName: containerName,
+		ContainerID:   containerID,
+		ExitCode:      exitCode,
+		Status:        "exited",
+	}
+
+	inspectResult, err := dc.client.ContainerInspect(ctx, containerID, client.ContainerInspectOptions{})
+	if err != nil {
+		return startupErr
+	}
+
+	inspection := inspectResult.Container
+	if state := inspection.State; state != nil {
+		startupErr.Status = string(state.Status)
+		startupErr.OOMKilled = state.OOMKilled
+	}
+	startupErr.RestartCount = inspection.RestartCount
+	startupErr.LogTail = dc.containerLogTail(ctx, containerID, inspection.Config)
+
+	return startupErr
+}
+
+// containerLogTail returns the tail of a container's combined output. It is
+// best effort by design: this only ever enriches a failure that has already been
+// decided, so a log that cannot be read must not replace the real error.
+func (dc *dockerClient) containerLogTail(ctx context.Context, containerID string, config *container.Config) string {
+	logs, err := dc.client.ContainerLogs(ctx, containerID, client.ContainerLogsOptions{
+		ShowStdout: true,
+		ShowStderr: true,
+		Tail:       startupLogTailLines,
+	})
+	if err != nil {
+		return ""
+	}
+	defer logs.Close()
+
+	var output bytes.Buffer
+	reader := io.LimitReader(logs, maxStartupLogBytes)
+	if config != nil && config.Tty {
+		// a TTY stream is the raw container output, without stream framing
+		_, _ = io.Copy(&output, reader)
+	} else {
+		// stdout and stderr are interleaved as framed chunks; merge both, since
+		// the reason a container died is usually on stderr
+		_, _ = stdcopy.StdCopy(&output, &output, reader)
+	}
+
+	return strings.TrimSpace(output.String())
+}
+
+// removeContainerByName drops whichever container currently holds the name, so a
+// leftover from an earlier run cannot block every future create with a name
+// conflict. The daemon reports names with a leading slash and omits non-running
+// containers unless all of them are requested, and a stale container is usually
+// exited rather than running.
+func (dc *dockerClient) removeContainerByName(ctx context.Context, containerName string) error {
+	containerList, err := dc.client.ContainerList(ctx, client.ContainerListOptions{
+		All: true,
+		// the name filter matches substrings, so the exact comparison below
+		// still decides; the filter only keeps the listing small
+		Filters: make(client.Filters).Add("name", containerName),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to list containers: %w", err)
+	}
+
+	options := client.ContainerRemoveOptions{
+		RemoveVolumes: true,
+		Force:         true,
+	}
+	for _, existing := range containerList.Items {
+		if !slices.ContainsFunc(existing.Names, func(name string) bool {
+			return strings.TrimPrefix(name, "/") == containerName
+		}) {
+			continue
+		}
+
+		if _, err := dc.client.ContainerRemove(ctx, existing.ID, options); err != nil && !cerrdefs.IsNotFound(err) {
+			return fmt.Errorf("failed to remove container '%s' holding name '%s': %w", existing.ID, containerName, err)
+		}
+	}
+
+	return nil
+}
+
+// discardContainer removes a container that never became usable, so the failure
+// leaves nothing behind: no dead container accumulating on the host and no name
+// blocking the retry. Removal is detached from the caller's context because a
+// cancelled flow is exactly when the leftover would otherwise survive, and any
+// failure is logged rather than returned so it cannot mask the startup error.
+func (dc *dockerClient) discardContainer(ctx context.Context, containerID string, logger *logrus.Entry) {
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), containerDiscardTimeout)
+	defer cancel()
+
+	_, err := dc.client.ContainerRemove(ctx, containerID, client.ContainerRemoveOptions{
+		RemoveVolumes: true,
+		Force:         true,
+	})
+	if err != nil && !cerrdefs.IsNotFound(err) {
+		logger.WithError(err).Error("failed to remove the container that did not start")
+	}
+}
+
 func (dc *dockerClient) StopContainer(ctx context.Context, containerID string, dbID int64) error {
 	logger := dc.logger.WithContext(ctx).WithField("local_id", containerID)
 	logger.Info("initiating container shutdown sequence")
 
-	stopErr := dc.client.ContainerStop(ctx, containerID, container.StopOptions{})
+	stopGrace := containerStopGrace
+	_, stopErr := dc.client.ContainerStop(ctx, containerID, client.ContainerStopOptions{
+		Timeout: &stopGrace,
+	})
 	if stopErr != nil {
-		if client.IsErrNotFound(stopErr) {
+		if cerrdefs.IsNotFound(stopErr) {
 			logger.Warn("target container already removed or never existed")
 		} else {
 			return fmt.Errorf("container shutdown failed: %w", stopErr)
@@ -473,6 +763,82 @@ func (dc *dockerClient) StopContainer(ctx context.Context, containerID string, d
 	return nil
 }
 
+func (dc *dockerClient) KillFlowCommands(ctx context.Context, containerID string) error {
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), flowCommandsSweepLimit)
+	defer cancel()
+
+	up, err := dc.isContainerUp(ctx, containerID)
+	if err != nil || !up {
+		return err
+	}
+
+	return sweepFlowCommands(func(signal string) (string, error) {
+		return dc.runFlowSweep(ctx, containerID, signal)
+	})
+}
+
+func sweepFlowCommands(run func(signal string) (string, error)) error {
+	out, err := run("TERM")
+	if err != nil {
+		return err
+	}
+
+	if strings.TrimSpace(out) == "hit" {
+		time.Sleep(flowCommandsGracePeriod)
+	}
+
+	_, err = run("KILL")
+
+	return err
+}
+
+func (dc *dockerClient) isContainerUp(ctx context.Context, containerID string) (bool, error) {
+	inspectResult, err := dc.client.ContainerInspect(ctx, containerID, client.ContainerInspectOptions{})
+	if err != nil {
+		if !cerrdefs.IsNotFound(err) {
+			return false, fmt.Errorf("container inspection failed: %w", err)
+		}
+
+		return false, nil
+	}
+
+	inspection := inspectResult.Container
+
+	return inspection.State != nil && inspection.State.Running, nil
+}
+
+func (dc *dockerClient) runFlowSweep(ctx context.Context, containerID, signal string) (string, error) {
+	createResp, err := dc.ContainerExecCreate(ctx, containerID, client.ExecCreateOptions{
+		Cmd:          []string{"sh", "-c", killFlowCommandsScript, "sh", signal},
+		AttachStdout: true,
+		AttachStderr: true,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to create the %s sweep for '%s': %w", signal, containerID, err)
+	}
+
+	resp, err := dc.ContainerExecAttach(ctx, createResp.ID, client.ExecAttachOptions{})
+	if err != nil {
+		return "", fmt.Errorf("failed to attach the %s sweep for '%s': %w", signal, containerID, err)
+	}
+	out, readErr := demuxExecStdout(resp.Reader, maxListStdoutBytes)
+	resp.Close()
+
+	if readErr != nil {
+		return "", fmt.Errorf("failed to run the %s sweep for '%s': %w", signal, containerID, readErr)
+	}
+
+	inspect, err := dc.ContainerExecInspect(ctx, createResp.ID)
+	if err != nil {
+		return "", fmt.Errorf("failed to inspect the %s sweep for '%s': %w", signal, containerID, err)
+	}
+	if inspect.ExitCode != 0 {
+		return "", fmt.Errorf("the %s sweep for '%s' exited with code %d", signal, containerID, inspect.ExitCode)
+	}
+
+	return string(out), nil
+}
+
 func (dc *dockerClient) RemoveContainer(ctx context.Context, containerID string, dbID int64) error {
 	logger := dc.logger.WithContext(ctx).WithField("local_id", containerID)
 	logger.Info("removing container and associated resources")
@@ -481,15 +847,16 @@ func (dc *dockerClient) RemoveContainer(ctx context.Context, containerID string,
 		return fmt.Errorf("failed to stop container: %w", err)
 	}
 
-	options := container.RemoveOptions{
+	options := client.ContainerRemoveOptions{
 		RemoveVolumes: true,
 		Force:         true,
 	}
-	if err := dc.client.ContainerRemove(ctx, containerID, options); err != nil {
-		if !client.IsErrNotFound(err) {
+	if _, err := dc.client.ContainerRemove(ctx, containerID, options); err != nil {
+		if !cerrdefs.IsNotFound(err) {
 			return fmt.Errorf("failed to remove container: %w", err)
 		}
-		// TODO: fix this case
+		// already gone (removed manually, or a prior call already succeeded);
+		// still mark it deleted below so the database row does not go stale.
 		logger.WithError(err).Warn("container not found")
 	}
 
@@ -598,18 +965,26 @@ func (dc *dockerClient) Cleanup(ctx context.Context) error {
 }
 
 func (dc *dockerClient) IsContainerRunning(ctx context.Context, containerID string) (bool, error) {
-	inspection, err := dc.client.ContainerInspect(ctx, containerID)
+	inspectResult, err := dc.client.ContainerInspect(ctx, containerID, client.ContainerInspectOptions{})
 	if err != nil {
-		if !client.IsErrNotFound(err) {
+		if !cerrdefs.IsNotFound(err) {
 			return false, fmt.Errorf("container inspection failed: %w", err)
 		}
 		// a removed container is missing, not an inspection failure
 		return false, nil
 	}
 
+	inspection := inspectResult.Container
+	if inspection.State == nil {
+		// the daemon always populates State for a successfully inspected
+		// container; treat the unexpected absence as "not running" rather
+		// than panicking on the field access below.
+		return false, nil
+	}
+
 	// Check both Running state and health status if available
 	isOperational := inspection.State.Running
-	if inspection.State != nil && inspection.State.Health != nil && inspection.State.Health.Status != "" {
+	if inspection.State.Health != nil && inspection.State.Health.Status != "" {
 		isOperational = isOperational && inspection.State.Health.Status != "unhealthy"
 	}
 
@@ -623,24 +998,25 @@ func (dc *dockerClient) GetDefaultImage() string {
 func (dc *dockerClient) ContainerExecCreate(
 	ctx context.Context,
 	container string,
-	config container.ExecOptions,
-) (container.ExecCreateResponse, error) {
-	return dc.client.ContainerExecCreate(ctx, container, config)
+	config client.ExecCreateOptions,
+) (client.ExecCreateResult, error) {
+	return dc.client.ExecCreate(ctx, container, config)
 }
 
 func (dc *dockerClient) ContainerExecAttach(
 	ctx context.Context,
 	execID string,
-	config container.ExecAttachOptions,
-) (types.HijackedResponse, error) {
-	return dc.client.ContainerExecAttach(ctx, execID, config)
+	config client.ExecAttachOptions,
+) (client.HijackedResponse, error) {
+	result, err := dc.client.ExecAttach(ctx, execID, config)
+	return result.HijackedResponse, err
 }
 
 func (dc *dockerClient) ContainerExecInspect(
 	ctx context.Context,
 	execID string,
-) (container.ExecInspect, error) {
-	return dc.client.ContainerExecInspect(ctx, execID)
+) (client.ExecInspectResult, error) {
+	return dc.client.ExecInspect(ctx, execID, client.ExecInspectOptions{})
 }
 
 func (dc *dockerClient) ContainerStatPath(
@@ -648,7 +1024,8 @@ func (dc *dockerClient) ContainerStatPath(
 	containerID string,
 	path string,
 ) (container.PathStat, error) {
-	return dc.client.ContainerStatPath(ctx, containerID, path)
+	result, err := dc.client.ContainerStatPath(ctx, containerID, client.ContainerStatPathOptions{Path: path})
+	return result.Stat, err
 }
 
 // ContainerEntryError is a directory entry that could not be stat'd during a
@@ -698,7 +1075,7 @@ func (dc *dockerClient) ListContainerDir(
 	// No TTY: a TTY's onlcr would rewrite every \n in the stream to \r\n —
 	// including a \n that is part of a filename — corrupting the name. Without a
 	// TTY the exec stream is multiplexed and demuxed below.
-	createResp, err := dc.ContainerExecCreate(ctx, containerID, container.ExecOptions{
+	createResp, err := dc.ContainerExecCreate(ctx, containerID, client.ExecCreateOptions{
 		Cmd:          []string{"find", dirPath, "-maxdepth", "1", "-mindepth", "1", "!", "-name", ".*", "-print0"},
 		AttachStdout: true,
 		AttachStderr: true,
@@ -707,7 +1084,7 @@ func (dc *dockerClient) ListContainerDir(
 		return ContainerDirListing{}, fmt.Errorf("failed to create list exec for '%s': %w", dirPath, err)
 	}
 
-	resp, err := dc.ContainerExecAttach(ctx, createResp.ID, container.ExecAttachOptions{})
+	resp, err := dc.ContainerExecAttach(ctx, createResp.ID, client.ExecAttachOptions{})
 	if err != nil {
 		return ContainerDirListing{}, fmt.Errorf("failed to attach list exec for '%s': %w", dirPath, err)
 	}
@@ -866,9 +1243,12 @@ func (dc *dockerClient) CopyToContainer(
 	containerID string,
 	dstPath string,
 	content io.Reader,
-	options container.CopyToContainerOptions,
+	options client.CopyToContainerOptions,
 ) error {
-	return dc.client.CopyToContainer(ctx, containerID, dstPath, content, options)
+	options.DestinationPath = dstPath
+	options.Content = content
+	_, err := dc.client.CopyToContainer(ctx, containerID, options)
+	return err
 }
 
 func (dc *dockerClient) CopyFromContainer(
@@ -876,26 +1256,26 @@ func (dc *dockerClient) CopyFromContainer(
 	containerID string,
 	srcPath string,
 ) (io.ReadCloser, container.PathStat, error) {
-	return dc.client.CopyFromContainer(ctx, containerID, srcPath)
+	result, err := dc.client.CopyFromContainer(ctx, containerID, client.CopyFromContainerOptions{SourcePath: srcPath})
+	return result.Content, result.Stat, err
 }
 
 func (dc *dockerClient) pullImage(ctx context.Context, imageName string) error {
-	filters := filters.NewArgs()
-	filters.Add("reference", imageName)
-	images, err := dc.client.ImageList(ctx, image.ListOptions{
-		Filters: filters,
+	filterArgs := make(client.Filters).Add("reference", imageName)
+	images, err := dc.client.ImageList(ctx, client.ImageListOptions{
+		Filters: filterArgs,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to list images: %w", err)
 	}
 
-	if imageExistsLocally := len(images) > 0; imageExistsLocally {
+	if imageExistsLocally := len(images.Items) > 0; imageExistsLocally {
 		return nil
 	}
 
 	dc.logger.WithContext(ctx).WithField("image", imageName).Info("initiating image download from registry...")
 
-	pullStream, err := dc.client.ImagePull(ctx, imageName, image.PullOptions{})
+	pullStream, err := dc.client.ImagePull(ctx, imageName, client.ImagePullOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to pull image: %w", err)
 	}
@@ -922,22 +1302,22 @@ func getHostDockerSocket(ctx context.Context, cli *client.Client) string {
 		return daemonHost
 	}
 
-	filterArgs := filters.NewArgs()
-	filterArgs.Add("status", "running")
+	filterArgs := make(client.Filters).Add("status", "running")
 
-	containers, err := cli.ContainerList(ctx, container.ListOptions{
+	containerList, err := cli.ContainerList(ctx, client.ContainerListOptions{
 		Filters: filterArgs,
 	})
 	if err != nil {
 		return daemonHost
 	}
 
-	for _, container := range containers {
-		inspect, err := cli.ContainerInspect(ctx, container.ID)
+	for _, container := range containerList.Items {
+		result, err := cli.ContainerInspect(ctx, container.ID, client.ContainerInspectOptions{})
 		if err != nil {
 			continue
 		}
 
+		inspect := result.Container
 		if inspect.Config.Hostname != hostname {
 			continue
 		}
@@ -964,23 +1344,23 @@ func getHostDataDir(ctx context.Context, cli *client.Client, dataDir, workDir st
 		return ""
 	}
 
-	filterArgs := filters.NewArgs()
-	filterArgs.Add("status", "running")
+	filterArgs := make(client.Filters).Add("status", "running")
 
-	containers, err := cli.ContainerList(ctx, container.ListOptions{
+	containerList, err := cli.ContainerList(ctx, client.ContainerListOptions{
 		Filters: filterArgs,
 	})
 	if err != nil {
 		return "" // unexpected error
 	}
 
-	mounts := []types.MountPoint{}
-	for _, container := range containers {
-		inspect, err := cli.ContainerInspect(ctx, container.ID)
+	mounts := []container.MountPoint{}
+	for _, container := range containerList.Items {
+		result, err := cli.ContainerInspect(ctx, container.ID, client.ContainerInspectOptions{})
 		if err != nil {
 			continue
 		}
 
+		inspect := result.Container
 		if inspect.Config.Hostname != hostname {
 			continue
 		}
@@ -1001,7 +1381,7 @@ func getHostDataDir(ctx context.Context, cli *client.Client, dataDir, workDir st
 	}
 
 	// sort mounts by destination length to get the most accurate mount point
-	slices.SortFunc(mounts, func(a, b types.MountPoint) int {
+	slices.SortFunc(mounts, func(a, b container.MountPoint) int {
 		return len(b.Destination) - len(a.Destination)
 	})
 
@@ -1027,11 +1407,11 @@ func ensureDockerNetwork(ctx context.Context, cli *client.Client, name string) e
 		return nil
 	}
 
-	if _, err := cli.NetworkInspect(ctx, name, network.InspectOptions{}); err == nil {
+	if _, err := cli.NetworkInspect(ctx, name, client.NetworkInspectOptions{}); err == nil {
 		return nil
 	}
 
-	_, err := cli.NetworkCreate(ctx, name, network.CreateOptions{
+	_, err := cli.NetworkCreate(ctx, name, client.NetworkCreateOptions{
 		Driver: "bridge",
 	})
 	if err != nil {

@@ -23,6 +23,7 @@ import { useAutoScroll } from '@/hooks/use-auto-scroll';
 import { Log } from '@/lib/log';
 import { cn } from '@/lib/utils';
 import { formatName } from '@/lib/utils/format';
+import { groupAssistantsByState } from '@/models/assistant';
 import { isProviderValid } from '@/models/provider';
 import { useFlow } from '@/providers/flow-provider';
 import { useProviders } from '@/providers/providers-provider';
@@ -73,33 +74,7 @@ function AssistantsDropdown({
         return assistants.findIndex((assistant) => assistant.id === selectedAssistantId);
     }, [assistants, selectedAssistantId]);
 
-    const assistantsGroup = useMemo(() => {
-        type AssistantItem = { assistant: AssistantFragmentFragment; index: number };
-
-        return assistants.reduce<{
-            active: AssistantItem[];
-            failed: AssistantItem[];
-            finished: AssistantItem[];
-        }>(
-            (accumulator, assistant, index) => {
-                const item = { assistant, index: index + 1 };
-
-                return {
-                    ...accumulator,
-                    active:
-                        assistant.status === StatusType.Running || assistant.status === StatusType.Waiting
-                            ? [...accumulator.active, item]
-                            : accumulator.active,
-                    failed: assistant.status === StatusType.Failed ? [...accumulator.failed, item] : accumulator.failed,
-                    finished:
-                        assistant.status === StatusType.Finished
-                            ? [...accumulator.finished, item]
-                            : accumulator.finished,
-                };
-            },
-            { active: [], failed: [], finished: [] },
-        );
-    }, [assistants]);
+    const assistantsGroup = useMemo(() => groupAssistantsByState(assistants), [assistants]);
 
     const handleAssistantSelect = (assistantId: string) => {
         onAssistantSelect(assistantId);
@@ -149,7 +124,11 @@ function AssistantsDropdown({
 
                 <div className="flex flex-1 items-center gap-2 overflow-hidden">
                     <span className="truncate text-sm">{assistant.title}</span>
-                    {!isValid && <span className="text-destructive shrink-0 text-xs">{t('flows:messages.assistantUnavailable')}</span>}
+                    {!isValid && (
+                        <span className="text-destructive shrink-0 text-xs">
+                            {t('flows:messages.assistantUnavailable')}
+                        </span>
+                    )}
                 </div>
 
                 <Check
@@ -235,7 +214,9 @@ function AssistantsDropdown({
                             )}
 
                             {assistantsGroup.active.length > 0 && (
-                                <CommandGroup heading={t('flows:messages.activeGroup', { count: assistantsGroup.active.length })}>
+                                <CommandGroup
+                                    heading={t('flows:messages.activeGroup', { count: assistantsGroup.active.length })}
+                                >
                                     {assistantsGroup.active.map(({ assistant, index }) =>
                                         renderAssistantItem(assistant, index),
                                     )}
@@ -243,7 +224,11 @@ function AssistantsDropdown({
                             )}
 
                             {assistantsGroup.finished.length > 0 && (
-                                <CommandGroup heading={t('flows:messages.finishedGroup', { count: assistantsGroup.finished.length })}>
+                                <CommandGroup
+                                    heading={t('flows:messages.finishedGroup', {
+                                        count: assistantsGroup.finished.length,
+                                    })}
+                                >
                                     {assistantsGroup.finished.map(({ assistant, index }) =>
                                         renderAssistantItem(assistant, index),
                                     )}
@@ -251,7 +236,9 @@ function AssistantsDropdown({
                             )}
 
                             {assistantsGroup.failed.length > 0 && (
-                                <CommandGroup heading={t('flows:messages.failedGroup', { count: assistantsGroup.failed.length })}>
+                                <CommandGroup
+                                    heading={t('flows:messages.failedGroup', { count: assistantsGroup.failed.length })}
+                                >
                                     {assistantsGroup.failed.map(({ assistant, index }) =>
                                         renderAssistantItem(assistant, index),
                                     )}
@@ -282,7 +269,7 @@ const searchFormSchema = z.object({
 
 function FlowAssistantMessages({ className }: FlowAssistantMessagesProps) {
     const { t } = useTranslation();
-    const { providers } = useProviders();
+    const { providers, selectedProvider } = useProviders();
 
     const {
         assistantLogs: logs,
@@ -395,7 +382,7 @@ function FlowAssistantMessages({ className }: FlowAssistantMessagesProps) {
 
     const handleSubmitMessage = async (values: FlowFormValues) => {
         if (!values.message.trim()) {
-            return;
+            return false;
         }
 
         setIsSubmitting(true);
@@ -404,12 +391,10 @@ function FlowAssistantMessages({ className }: FlowAssistantMessagesProps) {
             if (!selectedAssistantId) {
                 setIsAssistantCreating(true);
 
-                if (createAssistant) {
-                    await createAssistant(values);
-                }
-            } else if (submitAssistantMessage) {
-                await submitAssistantMessage(selectedAssistantId, values);
+                return await createAssistant(values);
             }
+
+            return await submitAssistantMessage(selectedAssistantId, values);
         } catch (error) {
             Log.error('Error submitting message:', error);
             throw error;
@@ -640,7 +625,7 @@ function FlowAssistantMessages({ className }: FlowAssistantMessagesProps) {
             <div className="bg-background sticky bottom-0 p-px">
                 <FlowForm
                     defaultValues={{
-                        providerName: selectedAssistant?.provider?.name ?? '',
+                        providerName: selectedAssistant?.provider?.name ?? selectedProvider?.name ?? '',
                         useAgents: shouldUseAgents,
                     }}
                     isCanceling={isCanceling}

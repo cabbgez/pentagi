@@ -1,7 +1,16 @@
 import { format, isThisYear, isToday } from 'date-fns';
+import { enUS } from 'date-fns/locale';
 
 import i18n from '@/i18n';
 import { getDateLocale, getIntlLocale } from '@/lib/utils/i18n-locale';
+
+const PROVIDER_LABELS: Record<string, string> = {
+    github: 'GitHub',
+    google: 'Google',
+};
+
+export const formatAccountProvider = (provider?: string): null | string =>
+    provider ? (PROVIDER_LABELS[provider] ?? provider) : null;
 
 export const formatName = (name?: string): string =>
     (name || '')
@@ -22,6 +31,9 @@ export const formatDate = (date: Date, language?: string) => {
 
     return format(date, 'HH:mm, d MMM yyyy', { locale });
 };
+
+export const formatTableDate = (date: Date) =>
+    isThisYear(date) ? formatDate(date) : format(date, 'd MMM yyyy', { locale: enUS });
 
 export const formatNumber = (value: number, language?: string): string =>
     new Intl.NumberFormat(getIntlLocale(language ?? i18n.language)).format(value);

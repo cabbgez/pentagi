@@ -163,7 +163,7 @@ function FlowAutomationMessages({ className }: FlowAutomationMessagesProps) {
         setIsSubmitting(true);
 
         try {
-            await submitAutomationMessage(values);
+            return await submitAutomationMessage(values);
         } finally {
             setIsSubmitting(false);
         }

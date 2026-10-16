@@ -8,7 +8,7 @@ import type { AuthInfo } from '@/models/info';
 import type { User } from '@/models/user';
 
 import i18n from '@/i18n';
-import { api } from '@/lib/axios';
+import { api, getApiErrorCode } from '@/lib/axios';
 import { routes } from '@/lib/routes';
 import { getReturnUrlParam } from '@/lib/utils/auth';
 import { baseUrl } from '@/models/api';
@@ -42,6 +42,8 @@ interface UserContextType {
 const UserContext = createContext<undefined | UserContextType>(undefined);
 
 export const AUTH_STORAGE_KEY = 'auth';
+
+export const LOGIN_LOCKED_MESSAGE = 'Too many login attempts. Wait a few minutes and try again.';
 
 export function UserProvider({ children }: { children: ReactNode }) {
     const navigate = useNavigate();
@@ -161,7 +163,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
             const finalReturnUrl = returnUrl || getReturnUrlParam(currentPath);
 
             try {
-                await api.get('/auth/logout');
+                await api.post('/auth/logout');
                 toast.success(i18n.t('auth:toast.loggedOut'));
             } catch {
                 toast.error(i18n.t('auth:toast.logoutFailed'));
@@ -204,8 +206,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 }
 
                 return { success: true };
-            } catch {
-                const errorMessage = 'Login failed. Please try again.';
+            } catch (error) {
+                const errorMessage =
+                    getApiErrorCode(error) === 'Auth.TooManyAttempts'
+                        ? LOGIN_LOCKED_MESSAGE
+                        : 'Login failed. Please try again.';
                 toast.error(errorMessage);
 
                 return { error: errorMessage, success: false };

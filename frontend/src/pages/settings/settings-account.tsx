@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { Lock, Mail, User } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -10,15 +10,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { EmailChangeForm } from '@/features/authentication/email-change-form';
 import { NameChangeForm } from '@/features/authentication/name-change-form';
 import { PasswordChangeForm } from '@/features/authentication/password-change-form';
+import { formatAccountProvider } from '@/lib/utils/format';
 import { getDateLocale } from '@/lib/utils/i18n-locale';
 import { useUser } from '@/providers/user-provider';
 
 type EditingSection = 'email' | 'name' | 'password';
-
-const PROVIDER_LABELS: Record<string, string> = {
-    github: 'GitHub',
-    google: 'Google',
-};
 
 function SettingsAccount() {
     const { i18n, t } = useTranslation();
@@ -44,14 +40,12 @@ function SettingsAccount() {
     const initial = ([...(displayName || '?')][0] ?? '?').toUpperCase();
     const createdAt = user.created_at ? new Date(user.created_at) : null;
     const memberSince =
-        createdAt && !Number.isNaN(createdAt.getTime())
+        createdAt && isValid(createdAt)
             ? format(createdAt, 'MMMM yyyy', { locale: getDateLocale(i18n.language) })
             : null;
     const accountLabel = isLocal
         ? t('settings:account.localAccount')
-        : user.provider
-          ? (PROVIDER_LABELS[user.provider] ?? user.provider)
-          : t('settings:account.oauthAccount');
+        : (formatAccountProvider(user.provider) ?? t('settings:account.oauthAccount'));
 
     return (
         <>
