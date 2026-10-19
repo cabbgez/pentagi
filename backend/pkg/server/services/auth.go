@@ -44,6 +44,10 @@ type AuthServiceConfig struct {
 	LoginCallbackURL string
 	SessionTimeout   int // in seconds
 
+	// AuthDisabled mirrors Config.AuthDisabled so /info can tell the frontend
+	// that a login is not required. It does not affect request handling here.
+	AuthDisabled bool
+
 	// CookiePrefix namespaces the OAuth CSRF cookies for this instance. Cookies
 	// are scoped by host and not by port, so two instances on one host would
 	// otherwise clobber each other's in-flight OAuth handshakes. Empty in
@@ -861,15 +865,16 @@ func randBytes(nByte int) ([]byte, error) {
 }
 
 type info struct {
-	Type      string      `json:"type"`
-	Develop   bool        `json:"develop"`
-	User      models.User `json:"user"`
-	Role      models.Role `json:"role"`
-	Providers []string    `json:"providers"`
-	Privs     []string    `json:"privileges"`
-	OAuth     bool        `json:"oauth"`
-	IssuedAt  time.Time   `json:"issued_at"`
-	ExpiresAt time.Time   `json:"expires_at"`
+	Type         string      `json:"type"`
+	Develop      bool        `json:"develop"`
+	AuthDisabled bool        `json:"auth_disabled"`
+	User         models.User `json:"user"`
+	Role         models.Role `json:"role"`
+	Providers    []string    `json:"providers"`
+	Privs        []string    `json:"privileges"`
+	OAuth        bool        `json:"oauth"`
+	IssuedAt     time.Time   `json:"issued_at"`
+	ExpiresAt    time.Time   `json:"expires_at"`
 }
 
 // Info is function to return settings and current information about system and config
@@ -906,6 +911,7 @@ func (s *AuthService) Info(c *gin.Context) {
 	resp.IssuedAt = time.Unix(gtm, 0).UTC()
 	resp.ExpiresAt = time.Unix(exp, 0).UTC()
 	resp.Develop = version.IsDevelopMode()
+	resp.AuthDisabled = s.cfg.AuthDisabled
 	resp.OAuth = tid == models.UserTypeOAuth.String()
 	for name := range s.oauth {
 		resp.Providers = append(resp.Providers, name)

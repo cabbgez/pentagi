@@ -314,6 +314,153 @@ func (s *FlowService) GetFlowGraph(c *gin.Context) {
 	response.Success(c, http.StatusOK, resp)
 }
 
+// GetFlowStatus is a function to return flow status with all tasks and subtasks
+// @Summary Retrieve flow status with all tasks and subtasks
+// @Tags Flows
+// @Produce json
+// @Security BearerAuth
+// @Param flowID path int true "flow id" minimum(0)
+// @Success 200 {object} response.successResp{data=models.FlowStatusView} "flow status received successful"
+// @Failure 400 {object} response.errorResp "invalid flow id"
+// @Failure 403 {object} response.errorResp "getting flow status not permitted"
+// @Failure 404 {object} response.errorResp "flow not found"
+// @Failure 500 {object} response.errorResp "internal error on getting flow status"
+// @Router /flows/{flowID}/status [get]
+func (s *FlowService) GetFlowStatus(c *gin.Context) {
+	var (
+		err    error
+		flowID uint64
+		flow   models.Flow
+		tasks  []models.Task
+	)
+
+	if flowID, err = strconv.ParseUint(c.Param("flowID"), 10, 64); err != nil {
+		logger.FromContext(c).WithError(err).Errorf("error parsing flow id")
+		response.Error(c, response.ErrFlowsInvalidRequest, err)
+		return
+	}
+
+	uid := c.GetUint64("uid")
+	privs := c.GetStringSlice("prm")
+	var scope func(db *gorm.DB) *gorm.DB
+	if slices.Contains(privs, "flows.admin") {
+		scope = func(db *gorm.DB) *gorm.DB {
+			return db.Where("id = ?", flowID)
+		}
+	} else if slices.Contains(privs, "flows.view") {
+		scope = func(db *gorm.DB) *gorm.DB {
+			return db.Where("id = ? AND user_id = ?", flowID, uid)
+		}
+	} else {
+		logger.FromContext(c).Errorf("error filtering user role permissions: permission not found")
+		response.Error(c, response.ErrNotPermitted, nil)
+		return
+	}
+
+	if err = s.db.Model(&flow).Scopes(scope).Take(&flow).Error; err != nil {
+		logger.FromContext(c).WithError(err).Errorf("error on getting flow by id")
+		if gorm.IsRecordNotFoundError(err) {
+			response.Error(c, response.ErrFlowsNotFound, err)
+		} else {
+			response.Error(c, response.ErrInternal, err)
+		}
+		return
+	}
+
+	// The endpoint promises the whole tree, so a caller that may not read tasks
+	// or subtasks gets an error rather than a silently empty answer.
+	if !mayReadFlowChildren(flow.UserID, uid, privs, "tasks.view", "tasks.admin") {
+		logger.FromContext(c).Errorf("error checking tasks view permission: permission not found")
+		response.Error(c, response.ErrNotPermitted, nil)
+		return
+	}
+
+	if !mayReadFlowChildren(flow.UserID, uid, privs, "subtasks.view", "subtasks.admin") {
+		logger.FromContext(c).Errorf("error checking subtasks view permission: permission not found")
+		response.Error(c, response.ErrNotPermitted, nil)
+		return
+	}
+
+	if err = s.db.Model(&models.Task{}).Where("flow_id = ?", flowID).Order("id").Find(&tasks).Error; err != nil {
+		logger.FromContext(c).WithError(err).Errorf("error on getting flow tasks")
+		response.Error(c, response.ErrInternal, err)
+		return
+	}
+
+	tids := make([]uint64, 0, len(tasks))
+	for _, task := range tasks {
+		tids = append(tids, task.ID)
+	}
+
+	var subtasks []models.Subtask
+	if len(tids) > 0 {
+		if err = s.db.Model(&models.Subtask{}).
+			Where("task_id IN (?)", tids).
+			Order("id").
+			Find(&subtasks).Error; err != nil {
+			logger.FromContext(c).WithError(err).Errorf("error on getting flow subtasks")
+			response.Error(c, response.ErrInternal, err)
+			return
+		}
+	}
+
+	subtasksByTask := make(map[uint64][]models.Subtask, len(tasks))
+	for _, subtask := range subtasks {
+		subtasksByTask[subtask.TaskID] = append(subtasksByTask[subtask.TaskID], subtask)
+	}
+
+	resp := models.FlowStatusView{
+		ID:        flow.ID,
+		Status:    flow.Status,
+		Title:     flow.Title,
+		CreatedAt: flow.CreatedAt,
+		UpdatedAt: flow.UpdatedAt,
+		Tasks:     make([]models.TaskStatusView, 0, len(tasks)),
+	}
+
+	for _, task := range tasks {
+		taskView := models.TaskStatusView{
+			ID:        task.ID,
+			Status:    task.Status,
+			Title:     task.Title,
+			Input:     task.Input,
+			Result:    task.Result,
+			CreatedAt: task.CreatedAt,
+			UpdatedAt: task.UpdatedAt,
+			Subtasks:  make([]models.SubtaskStatusView, 0, len(subtasksByTask[task.ID])),
+		}
+
+		for _, subtask := range subtasksByTask[task.ID] {
+			taskView.Subtasks = append(taskView.Subtasks, models.SubtaskStatusView{
+				ID:          subtask.ID,
+				Status:      subtask.Status,
+				Title:       subtask.Title,
+				Description: subtask.Description,
+				Result:      subtask.Result,
+				CreatedAt:   subtask.CreatedAt,
+				UpdatedAt:   subtask.UpdatedAt,
+			})
+		}
+
+		resp.Tasks = append(resp.Tasks, taskView)
+	}
+
+	if err = resp.Valid(); err != nil {
+		logger.FromContext(c).WithError(err).Errorf("error validating flow status data '%d'", flowID)
+		response.Error(c, response.ErrFlowsInvalidData, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, resp)
+}
+
+// mayReadFlowChildren reports whether the caller may read the tasks or subtasks
+// of a flow. Owners need the matching view privilege; admins may read any
+// flow's children.
+func mayReadFlowChildren(ownerID, uid uint64, privs []string, view, admin string) bool {
+	return (ownerID == uid && slices.Contains(privs, view)) || slices.Contains(privs, admin)
+}
+
 // CreateFlow is a function to create new flow with custom functions
 // @Summary Create new flow with custom functions
 // @Tags Flows

@@ -139,6 +139,71 @@ func (fts FlowTasksSubtasks) Validate(db *gorm.DB) {
 	}
 }
 
+// FlowStatusView is a flat, stable projection of a flow with every task and
+// subtask, meant for third-party polling. It deliberately omits model
+// configuration, ownership and prompt plumbing that a status consumer does not
+// need, so the contract can stay unchanged when those internals move.
+// nolint:lll
+type FlowStatusView struct {
+	ID        uint64           `json:"id" validate:"min=0,numeric"`
+	Status    FlowStatus       `json:"status" validate:"valid,required"`
+	Title     string           `json:"title" validate:"required"`
+	CreatedAt time.Time        `json:"created_at" validate:"omitempty"`
+	UpdatedAt time.Time        `json:"updated_at" validate:"omitempty"`
+	Tasks     []TaskStatusView `json:"tasks" validate:"required"`
+}
+
+// Valid is function to control output data
+func (fsv FlowStatusView) Valid() error {
+	for i := range fsv.Tasks {
+		if err := fsv.Tasks[i].Valid(); err != nil {
+			return err
+		}
+	}
+	return validate.Struct(fsv)
+}
+
+// TaskStatusView is a task inside FlowStatusView, with its subtasks attached.
+// nolint:lll
+type TaskStatusView struct {
+	ID        uint64              `json:"id" validate:"min=0,numeric"`
+	Status    TaskStatus          `json:"status" validate:"valid,required"`
+	Title     string              `json:"title" validate:"required"`
+	Input     string              `json:"input" validate:"required"`
+	Result    string              `json:"result" validate:"omitempty"`
+	CreatedAt time.Time           `json:"created_at" validate:"omitempty"`
+	UpdatedAt time.Time           `json:"updated_at" validate:"omitempty"`
+	Subtasks  []SubtaskStatusView `json:"subtasks" validate:"required"`
+}
+
+// Valid is function to control output data
+func (tsv TaskStatusView) Valid() error {
+	for i := range tsv.Subtasks {
+		if err := tsv.Subtasks[i].Valid(); err != nil {
+			return err
+		}
+	}
+	return validate.Struct(tsv)
+}
+
+// SubtaskStatusView is a subtask inside TaskStatusView. Context stays out on
+// purpose: it is internal planning state, not a result a caller can act on.
+// nolint:lll
+type SubtaskStatusView struct {
+	ID          uint64        `json:"id" validate:"min=0,numeric"`
+	Status      SubtaskStatus `json:"status" validate:"valid,required"`
+	Title       string        `json:"title" validate:"required"`
+	Description string        `json:"description" validate:"required"`
+	Result      string        `json:"result" validate:"omitempty"`
+	CreatedAt   time.Time     `json:"created_at" validate:"omitempty"`
+	UpdatedAt   time.Time     `json:"updated_at" validate:"omitempty"`
+}
+
+// Valid is function to control output data
+func (ssv SubtaskStatusView) Valid() error {
+	return validate.Struct(ssv)
+}
+
 // FlowContainers is model to contain flow and linked containers information
 // nolint:lll
 type FlowContainers struct {

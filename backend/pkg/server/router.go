@@ -132,6 +132,23 @@ func NewRouter(
 	tokenCache := auth.NewTokenCache(orm)
 	userCache := auth.NewUserCache(orm)
 	authMiddleware := auth.NewAuthMiddleware(baseURL, cfg.AuthSalt(), tokenCache, userCache)
+
+	// When authentication is disabled, every guard is replaced by one that stamps
+	// the request with a real user's claims instead of validating credentials.
+	// PrivilegesRequired, the GraphQL layer and per-user data scoping then keep
+	// working unchanged, so the application behaves as if that user had signed in.
+	tryAuth := authMiddleware.TryAuth
+	authTokenRequired := authMiddleware.AuthTokenRequired
+	authUserRequired := authMiddleware.AuthUserRequired
+	if cfg.AuthDisabled {
+		autoAuth := auth.NewAutoAuthMiddleware(orm, userCache, cfg.AuthBypassUser)
+		logrus.WithField("bypass_user", cfg.AuthBypassUser).
+			Warn("authentication is disabled: every request is authorized without a login")
+		tryAuth = autoAuth.Handle
+		authTokenRequired = autoAuth.Handle
+		authUserRequired = autoAuth.Handle
+	}
+
 	oauthClients := make(map[string]oauth.OAuthClient)
 	oauthLoginCallbackURL := "/auth/login-callback"
 
@@ -197,6 +214,7 @@ func NewRouter(
 			LoginCallbackURL: oauthLoginCallbackURL,
 			SessionTimeout:   sessionTimeout,
 			CookiePrefix:     cfg.TenantPrefix(),
+			AuthDisabled:     cfg.AuthDisabled,
 		},
 		orm,
 		oauthClients,
@@ -281,18 +299,18 @@ func NewRouter(
 
 	// Special case for local user own password change
 	changePasswordGroup := api.Group("/user")
-	changePasswordGroup.Use(authMiddleware.AuthUserRequired)
+	changePasswordGroup.Use(authUserRequired)
 	changePasswordGroup.Use(localUserRequired())
 	changePasswordGroup.PUT("/password", userService.ChangePasswordCurrentUser)
 	changePasswordGroup.PUT("/email", userService.ChangeEmailCurrentUser)
 
 	// Unlike password/email, the display name is editable by OAuth users too — no localUserRequired.
 	changeNameGroup := api.Group("/user")
-	changeNameGroup.Use(authMiddleware.AuthUserRequired)
+	changeNameGroup.Use(authUserRequired)
 	changeNameGroup.PUT("/name", userService.ChangeNameCurrentUser)
 
 	publicGroup := api.Group("/")
-	publicGroup.Use(authMiddleware.TryAuth)
+	publicGroup.Use(tryAuth)
 	{
 		publicGroup.GET("/info", authService.Info)
 
@@ -306,10 +324,10 @@ func NewRouter(
 	}
 
 	privateGroup := api.Group("/")
-	privateGroup.Use(authMiddleware.AuthTokenRequired)
+	privateGroup.Use(authTokenRequired)
 
 	privateUserGroup := api.Group("/")
-	privateUserGroup.Use(authMiddleware.AuthUserRequired)
+	privateUserGroup.Use(authUserRequired)
 
 	registerPrivateRoutes(privateGroup, privateUserGroup, privateServices{
 		agentlog:     agentlogService,
@@ -566,6 +584,7 @@ func setFlowsGroup(parent *gin.RouterGroup, svc *services.FlowService) {
 		flowsViewGroup.GET("/", svc.GetFlows)
 		flowsViewGroup.GET("/:flowID", svc.GetFlow)
 		flowsViewGroup.GET("/:flowID/graph", svc.GetFlowGraph)
+		flowsViewGroup.GET("/:flowID/status", svc.GetFlowStatus)
 	}
 }
 

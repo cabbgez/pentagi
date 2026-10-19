@@ -1,6 +1,7 @@
 import type { User } from './user';
 
 export interface AuthInfo {
+    auth_disabled?: boolean;
     develop?: boolean;
     expires_at?: string;
     issued_at?: string;

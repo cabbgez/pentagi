@@ -397,11 +397,15 @@ export function MainSidebar() {
                                         {t('common:nav.profile')}
                                     </Link>
                                 </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => logout()}>
-                                    <LogOut className="mr-2 size-4" />
-                                    {t('common:user.logout')}
-                                </DropdownMenuItem>
+                                {!authInfo?.auth_disabled && (
+                                    <>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem onClick={() => logout()}>
+                                            <LogOut className="mr-2 size-4" />
+                                            {t('common:user.logout')}
+                                        </DropdownMenuItem>
+                                    </>
+                                )}
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </SidebarMenuItem>

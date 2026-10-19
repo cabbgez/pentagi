@@ -15,6 +15,7 @@ import (
 	"pentagi/pkg/graph/subscriptions"
 	"pentagi/pkg/server/models"
 
+	"github.com/jinzhu/gorm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -265,4 +266,142 @@ func TestFlows_DeleteFlow_DropsTheFlowFromTheOwnersFavorites(t *testing.T) {
 		"favorites changed without SettingsUserUpdated, so a connected client keeps the dead id")
 	require.Equal(t, int64(7), announcedTo,
 		"SettingsUserUpdated announced to the caller instead of the owner")
+}
+
+// seedStatusTables creates the tasks and subtasks tables the status endpoint
+// reads; the shared fixture only builds what the flow-file tests need.
+func seedStatusTables(t *testing.T, db *gorm.DB) {
+	t.Helper()
+
+	require.NoError(t, db.Exec(`
+		CREATE TABLE tasks (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			status TEXT NOT NULL DEFAULT 'created',
+			title TEXT NOT NULL DEFAULT 'untitled',
+			input TEXT NOT NULL DEFAULT '',
+			result TEXT NOT NULL DEFAULT '',
+			flow_id INTEGER NOT NULL,
+			created_at DATETIME,
+			updated_at DATETIME
+		)
+	`).Error)
+	require.NoError(t, db.Exec(`
+		CREATE TABLE subtasks (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			status TEXT NOT NULL DEFAULT 'created',
+			title TEXT NOT NULL DEFAULT 'untitled',
+			description TEXT NOT NULL DEFAULT '',
+			context TEXT NOT NULL DEFAULT '',
+			result TEXT NOT NULL DEFAULT '',
+			task_id INTEGER NOT NULL,
+			created_at DATETIME,
+			updated_at DATETIME
+		)
+	`).Error)
+}
+
+func TestFlows_GetFlowStatus_ServesEveryTaskAndSubtaskWithResults(t *testing.T) {
+	db := setupFlowFileServiceTestDB(t)
+	seedStatusTables(t, db)
+	seedFlow(t, db, 42, 7)
+	require.NoError(t, db.Exec(
+		`UPDATE flows SET status = 'waiting', title = 'scan example.com' WHERE id = 42`,
+	).Error)
+	require.NoError(t, db.Exec(`INSERT INTO tasks (id, status, title, input, result, flow_id, created_at, updated_at) VALUES
+		(10, 'finished', 'recon', 'scan example.com', 'open: 80, 443', 42, '2026-10-19 10:00:00', '2026-10-19 10:01:00'),
+		(11, 'running', 'exploit', 'try cve', '', 42, '2026-10-19 10:02:00', '2026-10-19 10:03:00')`).Error)
+	require.NoError(t, db.Exec(`INSERT INTO subtasks (id, status, title, description, result, task_id, created_at, updated_at) VALUES
+		(20, 'finished', 'port scan', 'nmap', '80/tcp open', 10, '2026-10-19 10:00:10', '2026-10-19 10:00:20'),
+		(21, 'failed', 'http probe', 'curl', 'connection reset', 10, '2026-10-19 10:00:30', '2026-10-19 10:00:40')`).Error)
+
+	c, w := newFlowFileTestContext(http.MethodGet, "/flows/42/status", nil,
+		[]string{"flows.view", "tasks.view", "subtasks.view"}, 7, 42)
+
+	NewFlowService(db, nil, nil, nil, nil).GetFlowStatus(c)
+
+	require.Equal(t, http.StatusOK, w.Code, w.Body.String())
+
+	var resp struct {
+		Status string                `json:"status"`
+		Data   models.FlowStatusView `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Equal(t, "success", resp.Status)
+	assert.Equal(t, uint64(42), resp.Data.ID)
+	assert.Equal(t, models.FlowStatusWaiting, resp.Data.Status)
+	assert.Equal(t, "scan example.com", resp.Data.Title)
+	require.Len(t, resp.Data.Tasks, 2,
+		"the endpoint must not paginate: a poller that sees one page reports a half-done flow")
+	require.Len(t, resp.Data.Tasks[0].Subtasks, 2)
+	assert.Equal(t, uint64(10), resp.Data.Tasks[0].ID)
+	assert.Equal(t, "open: 80, 443", resp.Data.Tasks[0].Result)
+	assert.Equal(t, "80/tcp open", resp.Data.Tasks[0].Subtasks[0].Result)
+	assert.Equal(t, uint64(11), resp.Data.Tasks[1].ID)
+	assert.Equal(t, models.TaskStatusRunning, resp.Data.Tasks[1].Status)
+	assert.NotContains(t, w.Body.String(), "user_id",
+		"the status contract must not leak flow ownership")
+}
+
+func TestFlows_GetFlowStatus_RefusesCallersThatCannotReadTheWholeTree(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		privs  []string
+		flowID uint64
+		owner  uint64
+		status int
+	}{
+		{
+			name:   "an owner without tasks.view would get an empty tree",
+			privs:  []string{"flows.view"},
+			flowID: 42, owner: 7, status: http.StatusForbidden,
+		},
+		{
+			name:   "an owner without subtasks.view would get tasks with no subtasks",
+			privs:  []string{"flows.view", "tasks.view"},
+			flowID: 42, owner: 7, status: http.StatusForbidden,
+		},
+		{
+			name:   "a caller without flows.view cannot reach the flow at all",
+			privs:  []string{"tasks.view", "subtasks.view"},
+			flowID: 42, owner: 7, status: http.StatusForbidden,
+		},
+		{
+			name:   "a flow that does not exist is a 404, not an empty tree",
+			privs:  []string{"flows.view", "tasks.view", "subtasks.view"},
+			flowID: 0, owner: 7, status: http.StatusNotFound,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			db := setupFlowFileServiceTestDB(t)
+			seedFlow(t, db, 42, tc.owner)
+
+			c, w := newFlowFileTestContext(http.MethodGet, "/flows/42/status", nil,
+				tc.privs, 7, tc.flowID)
+
+			NewFlowService(db, nil, nil, nil, nil).GetFlowStatus(c)
+
+			require.Equal(t, tc.status, w.Code, w.Body.String())
+		})
+	}
+}
+
+func TestFlows_GetFlowStatus_LetsAnAdminReadAnotherUsersTree(t *testing.T) {
+	db := setupFlowFileServiceTestDB(t)
+	seedStatusTables(t, db)
+	seedFlow(t, db, 42, 9)
+	require.NoError(t, db.Exec(`INSERT INTO tasks (id, status, title, input, flow_id) VALUES
+		(10, 'finished', 'recon', 'scan', 42)`).Error)
+
+	c, w := newFlowFileTestContext(http.MethodGet, "/flows/42/status", nil,
+		[]string{"flows.admin", "tasks.admin", "subtasks.admin"}, 7, 42)
+
+	NewFlowService(db, nil, nil, nil, nil).GetFlowStatus(c)
+
+	require.Equal(t, http.StatusOK, w.Code, w.Body.String())
+	var resp struct {
+		Data models.FlowStatusView `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Len(t, resp.Data.Tasks, 1)
+	assert.Equal(t, uint64(10), resp.Data.Tasks[0].ID)
 }

@@ -92,6 +92,18 @@ type Config struct {
 	// === Authentication & Session Security ===
 	CookieSigningSalt string `env:"COOKIE_SIGNING_SALT"`
 
+	// AuthDisabled removes the login requirement: every API request is authorized
+	// as the user named by AuthBypassUser (the seeded administrator by default),
+	// so the whole application is usable without signing in. It is intended for
+	// local or otherwise trusted deployments only, because anyone able to reach
+	// the server then holds that user's privileges. Off by default.
+	AuthDisabled bool `env:"DISABLE_AUTH" envDefault:"false"`
+
+	// AuthBypassUser names the user every request is attributed to when
+	// AuthDisabled is on. When the address is unknown, the first active
+	// administrator is used instead, then any active user.
+	AuthBypassUser string `env:"DISABLE_AUTH_USER" envDefault:"admin@pentagi.com"`
+
 	// === Web Scraper Service Endpoints ===
 	ScraperPublicURL  string `env:"SCRAPER_PUBLIC_URL"`
 	ScraperPrivateURL string `env:"SCRAPER_PRIVATE_URL"`

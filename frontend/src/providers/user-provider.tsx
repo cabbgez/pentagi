@@ -159,6 +159,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     const logout = useCallback(
         async (returnUrl?: string) => {
+            // With authentication disabled there is no session to end: reloading the
+            // page simply re-authorizes the same user, so a redirect to /login would
+            // only bounce straight back.
+            if (authInfo?.auth_disabled) {
+                window.location.reload();
+
+                return;
+            }
+
             const currentPath = location.pathname;
             const finalReturnUrl = returnUrl || getReturnUrlParam(currentPath);
 
@@ -172,7 +181,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 window.location.href = `${routes.login()}${finalReturnUrl}`;
             }
         },
-        [clearAuth, location.pathname],
+        [authInfo?.auth_disabled, clearAuth, location.pathname],
     );
 
     const login = useCallback(
